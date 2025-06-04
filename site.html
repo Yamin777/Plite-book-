@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Storage | Plite-Book</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-light: #60a5fa;
+            --primary-dark: #2563eb;
+            --accent-color: #10b981;
+            --text-color: #f3f4f6;
+            --text-light: #9ca3af;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --header-bg: #1f2937;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --transition: all 0.2s ease;
+            
+            --light-bg: #f9fafb;
+            --light-card: #ffffff;
+            --light-header: #ffffff;
+            --light-text: #111827;
+            --light-text-light: #6b7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        body.light-mode {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            --bg-color: var(--light-bg);
+            --card-bg: var(--light-card);
+            --header-bg: var(--light-header);
+            --text-color: var(--light-text);
+            --text-light: var(--light-text-light);
+        }
+
+        /* Header styles */
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--header-bg);
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        body.light-mode .header-btn {
+            color: var(--light-text);
+        }
+
+        .header-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+        }
+
+        /* Back button */
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            margin-bottom: 1rem;
+        }
+
+        /* Main content */
+        .main-content {
+            padding: 1.25rem;
+            padding-bottom: 5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        body.light-mode .section-title {
+            color: var(--light-text);
+        }
+
+        .section-icon {
+            color: var(--primary-color);
+        }
+
+        /* Storage content */
+        .storage-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .storage-container {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+
+        .storage-item {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        body.light-mode .storage-item {
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .storage-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .item-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .item-name {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-size {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Add new item */
+        .add-item {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border: 1px dashed var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+        }
+
+        .add-item .item-icon {
+            color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.1);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--header-bg);
+            padding: 0.75rem 0;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.75rem;
+            transition: var(--transition);
+            padding: 0.5rem;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item.add-btn {
+            position: relative;
+            top: -1.125rem;
+            background: var(--primary-color);
+            color: white;
+            width: 3.125rem;
+            height: 3.125rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .nav-item.add-btn .nav-icon {
+            font-size: 1.4rem;
+            margin-bottom: 0;
+        }
+
+        .nav-item.add-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: var(--transition);
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">Private Storage</div>
+        <div class="header-actions">
+            <button class="header-btn theme-toggle" id="themeToggle">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <button class="back-btn" onclick="window.history.back()">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+        
+        <h1 class="section-title">
+            <i class="fas fa-lock section-icon"></i>
+            Private Storage
+        </h1>
+        
+        <div class="storage-container">
+            <!-- Documents -->
+            <div class="storage-item">
+                <i class="fas fa-file-alt item-icon"></i>
+                <h3 class="item-name">Documents</h3>
+              
+            </div>
+            
+            <!-- Images -->
+            <div class="storage-item">
+                <i class="fas fa-image item-icon"></i>
+                <h3 class="item-name">Images</h3>
+              
+            </div>
+            
+            <!-- Books -->
+            <div class="storage-item">
+                <i class="fas fa-book item-icon"></i>
+                <h3 class="item-name">Books</h3>
+
+            </div>
+            
+            <!-- Videos -->
+            <div class="storage-item">
+                <i class="fas fa-video item-icon"></i>
+                <h3 class="item-name">Videos</h3>
+
+            </div>
+            
+            <!-- Add new folder -->
+            <div class="storage-item add-item">
+                <i class="fas fa-plus item-icon"></i>
+                <h3 class="item-name">Add New</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="home.html" class="nav-item">
+            <i class="fas fa-home nav-icon"></i>
+            <span>Home</span>
+        </a>
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-compass nav-icon"></i>
+            <span>Explore</span>
+        </a>
+        <a href="index.html" class="nav-item add-btn" id="addBtn">
+            <i class="fas fa-plus nav-icon"></i>
+        </a>
+        <a href="library4.html" class="nav-item">
+            <i class="fas fa-bookmark nav-icon"></i>
+            <span>Library</span>
+        </a>
+        <a href="rank.html" class="nav-item">
+            <i class="fas fa-user nav-icon"></i>
+            <span>Rank</span>
+        </a>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            
+            const themeIcon = themeToggle.querySelector('i');
+            themeIcon.className = isLight ? 'fas fa-moon' : 'fas fa-sun';
+        });
+    </script>
+</body>
+</html>

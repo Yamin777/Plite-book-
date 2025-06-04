@@ -1,0 +1,2185 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Library</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1d4ed8;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e3a8a;
+            --accent-color: #10b981;
+            --text-color: #e5e7eb;
+            --text-light: #9ca3af;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.12);
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --transition: all 0.3s ease;
+            --light-bg: #f9fafb;
+            --light-card: #121212;
+            --light-text: #111827;
+            --light-text-light: #6b7280;
+            --content-bg: #1f2937;
+            --content-light-bg: #fefefe;
+            --reader-line-height: 1.8;
+            --reader-font-size: 1.1rem;
+            --reader-max-width: 800px;
+            --reader-padding: 2rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        body.light-mode {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            --bg-color: var(--light-bg);
+            --card-bg: var(--light-card);
+            --text-color: var(--light-text);
+            --text-light: var(--light-text-light);
+            --content-bg: var(--content-light-bg);
+        }
+
+        /* Header styles */
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            z-index: 900;
+        }
+
+        body.light-mode .header {
+            background: var(--light-card);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            letter-spacing: -0.025em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 18px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        body.light-mode .header-btn {
+            color: var(--light-text);
+        }
+
+        .header-btn:hover {
+            color: var(--primary-light);
+        }
+
+        /* Main content */
+        .main-content {
+            padding: 24px;
+            padding-bottom: 90px;
+        }
+
+        .search-section {
+            margin-bottom: 24px;
+        }
+
+        .search-bar {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 14px 18px 14px 44px;
+            border: 1px solid var(--text-light);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        body.light-mode .search-bar input {
+            border-color: var(--light-text-light);
+            background: var(--light-card);
+            color: var(--light-text);
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .search-bar i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        body.light-mode .search-bar i {
+            color: var(--light-text-light);
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 24px 0 16px;
+            color: var(--text-color);
+        }
+
+        body.light-mode .section-title {
+            color: var(--light-text);
+        }
+
+        /* Book cards */
+        .books-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .books-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+        }
+
+        .book-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .book-card {
+            background: var(--light-card);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .book-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .book-cover {
+            width: 100%;
+            height: 160px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .book-cover {
+                height: 120px;
+            }
+        }
+
+        .book-color-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.95;
+            transition: var(--transition);
+            background: linear-gradient(135deg, var(--book-color), var(--book-color-light));
+        }
+
+        .book-spine {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .book-pages {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .book-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .book-card:hover .book-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: white;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+
+            color: white;
+        }
+
+        .book-info {
+            padding: 14px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .book-title {
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            color: var(--text-color);
+        }
+
+        body.light-mode .book-title {
+            color: var(--light-text);
+        }
+
+        .book-author {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        body.light-mode .book-author {
+            color: var(--light-text-light);
+        }
+
+        .book-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 8px;
+        }
+
+        body.light-mode .book-meta {
+            color: var(--light-text-light);
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 14px 0;
+            box-shadow: var(--shadow-sm);
+            z-index: 1000;
+        }
+
+        body.light-mode .bottom-nav {
+            background: var(--light-card);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            transition: var(--transition);
+            padding: 12px;
+        }
+
+        body.light-mode .nav-item {
+            color: var(--light-text-light);
+        }
+
+        .nav-item:hover {
+            color: var(--primary-light);
+        }
+
+        .nav-item.active {
+            color: var(--primary-light);
+        }
+
+        .nav-item.add-book {
+            position: relative;
+            top: -24px;
+            background: var(--primary-color);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: 0 6px 14px rgba(29, 78, 216, 0.4);
+        }
+
+        .nav-item.add-book i {
+            font-size: 1.6rem;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-md);
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+        body.light-mode .modal-content {
+            background: var(--light-card);
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        body.light-mode .modal-title {
+            color: var(--light-text);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+
+        body.light-mode .close-modal {
+            color: var(--light-text-light);
+        }
+
+        .close-modal:hover {
+            color: var(--primary-light);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        body.light-mode .form-group label {
+            color: var(--light-text);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--text-light);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        body.light-mode .form-group input,
+        body.light-mode .form-group select {
+            border-color: var(--light-text-light);
+            background: var(--light-card);
+            color: var(--light-text);
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        .color-option.selected {
+            border-color: var(--accent-color);
+            transform: scale(1.15);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 14px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-light);
+            border: 1px solid var(--primary-light);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        body.light-mode .btn-outline {
+            color: var(--light-text);
+            border-color: var(--light-text-light);
+        }
+/* Diary Reader - Mobile Optimized with Maximum Right-Side Words */
+:root {
+  --dark-bg: #12100c;
+  --dark-header: #1a1712;
+  --dark-border: #2a241e;
+  --dark-text: #d1c7b7;
+  --dark-title: #e0d8c8;
+  --dark-meta: #a99b84;
+  --dark-btn-bg: #25221b;
+  --dark-btn-hover: #3a3226;
+
+  --light-bg: #f8f4e6;
+  --light-header: #f0e6d2;
+  --light-border: #d1c7b7;
+  --light-text: #4a4236;
+  --light-title: #5a4a3a;
+  --light-meta: #8a7a61;
+  --light-btn-bg: #f0e6d2;
+  --light-btn-hover: #e6ddd0;
+}
+
+.reader-view {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--dark-bg);
+  z-index: 1200;
+  flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-image: linear-gradient(to bottom, rgba(58, 50, 38, 0.3) 1px, transparent 1px);
+  background-size: 100% 24px;
+}
+
+.reader-view.open {
+  display: flex;
+  animation: gentleFadeIn 0.3s ease-out;
+}
+
+.reader-header {
+  padding: 6px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--dark-border);
+  background: var(--dark-header);
+  min-height: 36px;
+}
+
+.reader-title-container {
+  flex: 1;
+  min-width: 0;
+  padding-right: 10px;
+}
+
+.reader-title {
+  font-size: 0.95rem;
+  color: var(--dark-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.reader-meta-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-end;
+}
+
+.reader-author,
+.reader-date {
+  font-size: 0.75rem;
+  color: var(--dark-meta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.reader-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.reader-action-btn,
+.reader-mode-toggle {
+  background: var(--dark-btn-bg);
+  border: 1px solid var(--dark-border);
+  color: var(--dark-meta);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.reader-mode-toggle {
+  min-width: 70px;
+}
+
+.reader-action-btn:hover,
+.reader-mode-toggle:hover {
+  background: var(--dark-btn-hover);
+  color: var(--dark-title);
+}
+
+/* Extreme Mobile Optimization for Right-Side Words */
+.reader-content-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 0;
+  display: flex;
+  justify-content: center;
+  background: 
+    linear-gradient(to bottom, rgba(58, 50, 38, 0.3) 1px, transparent 1px),
+    linear-gradient(to right, var(--dark-bg), var(--dark-bg));
+  background-size: 100% 24px, 100% 100%;
+}
+
+.reader-content {
+  max-width: 100%;
+  width: 100%;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--dark-text);
+  word-break: break-word;
+  padding: 0 1%; /* Minimal padding */
+  position: relative;
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.reader-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1%; /* Matches minimal padding */
+  bottom: 0;
+  width: 1px;
+  background: rgba(210, 180, 140, 0.1);
+}
+
+.reader-content p {
+  margin-bottom: 0.8em;
+  text-indent: 1.2em;
+  word-spacing: -0.08em; /* Very tight word spacing */
+  letter-spacing: -0.01em; /* Negative letter spacing */
+  margin-right: -1.2%; /* Pull text significantly to the right */
+}
+
+/* Mobile-Specific Extreme Optimizations */
+@media (max-width: 768px) {
+  .reader-content {
+    padding: 0 0.5%; /* Nearly no padding */
+    font-size: 0.9rem; /* Slightly smaller font */
+  }
+  
+  .reader-content::before {
+    left: 0.5%;
+  }
+  
+  .reader-content p {
+    word-spacing: -0.1em; /* Extremely tight word spacing */
+    letter-spacing: -0.015em;
+    margin-right: -1.5%; /* Pull text even more to the right */
+    text-indent: 1em; /* Smaller indent */
+  }
+}
+
+@media (max-width: 480px) {
+  .reader-content {
+    padding: 0 0.2%; /* Absolute minimal padding */
+  }
+  
+  .reader-content::before {
+    left: 0.2%;
+    display: none; /* Hide guideline on very small screens */
+  }
+  
+  .reader-content p {
+    word-spacing: -0.12em; /* Maximum tightness */
+    margin-right: -2%; /* Maximum pull to the right */
+    hyphens: manual; /* Better control on tiny screens */
+  }
+}
+
+/* Light Mode Styles */
+.reader-view.light-mode {
+  background: var(--light-bg);
+  background-image: linear-gradient(to bottom, rgba(200, 180, 150, 0.3) 1px, transparent 1px);
+}
+
+.reader-view.light-mode .reader-header {
+  background: var(--light-header);
+  border-bottom-color: var(--light-border);
+}
+
+.reader-view.light-mode .reader-title {
+  color: var(--light-title);
+}
+
+.reader-view.light-mode .reader-author,
+.reader-view.light-mode .reader-date {
+  color: var(--light-meta);
+}
+
+.reader-view.light-mode .reader-content-container {
+  background: 
+    linear-gradient(to bottom, rgba(200, 180, 150, 0.3) 1px, transparent 1px),
+    linear-gradient(to right, var(--light-bg), var(--light-bg));
+}
+
+.reader-view.light-mode .reader-content {
+  color: var(--light-text);
+}
+
+.reader-view.light-mode .reader-content::before {
+  background: rgba(120, 100, 80, 0.15);
+}
+
+.reader-view.light-mode .reader-action-btn,
+.reader-view.light-mode .reader-mode-toggle {
+  background: var(--light-btn-bg);
+  border-color: var(--light-border);
+  color: var(--light-meta);
+}
+
+.reader-view.light-mode .reader-action-btn:hover,
+.reader-view.light-mode .reader-mode-toggle:hover {
+  background: var(--light-btn-hover);
+  color: var(--light-title);
+}
+
+.reader-view.light-mode .reader-pagination {
+  border-top-color: var(--light-border);
+}
+
+.reader-view.light-mode .reader-pagination-btn {
+  background: var(--light-btn-bg);
+  border-color: var(--light-border);
+  color: var(--light-meta);
+}
+
+.reader-view.light-mode .reader-pagination-btn:hover {
+  background: var(--light-btn-hover);
+  color: var(--light-title);
+}
+
+/* Pagination Styles */
+.reader-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--dark-border);
+}
+
+.reader-pagination-btn {
+  background: var(--dark-btn-bg);
+  border: 1px solid var(--dark-border);
+  color: var(--dark-meta);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.reader-pagination-btn:hover {
+  background: var(--dark-btn-hover);
+  color: var(--dark-title);
+}
+
+.reader-pagination-info {
+  font-size: 0.75rem;
+  color: var(--dark-meta);
+  padding: 0 6px;
+}
+
+/* Animation */
+@keyframes gentleFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar Styles */
+.reader-content-container::-webkit-scrollbar {
+  width: 4px; /* Thinner scrollbar */
+}
+
+.reader-content-container::-webkit-scrollbar-track {
+  background: var(--dark-header);
+}
+
+.reader-content-container::-webkit-scrollbar-thumb {
+  background: var(--dark-border);
+  border-radius: 2px;
+}
+
+.reader-view.light-mode .reader-content-container::-webkit-scrollbar-track {
+  background: var(--light-header);
+}
+
+.reader-view.light-mode .reader-content-container::-webkit-scrollbar-thumb {
+  background: var(--light-border);
+}
+
+/* Remove all focus outlines */
+button:focus, 
+textarea:focus,
+input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Base Styles */
+:root {
+  --bg-color: #111827;
+  --header-bg: #1a1712;
+  --border-color: #2a241e;
+  --text-color: #d1c7b7;
+  --title-color: #e0d8c8;
+  --meta-color: #a99b84;
+  --btn-bg: #25221b;
+  --btn-hover: #3a3226;
+  --paper-line: rgba(58, 50, 38, 0.3);
+}
+
+.light-mode {
+  --bg-color: #f8f4e6;
+  --header-bg: #f0e6d2;
+  --border-color: #d1c7b7;
+  --text-color: #4a4236;
+  --title-color: #5a4a3a;
+  --meta-color: #8a7a61;
+  --btn-bg: #f0e6d2;
+  --btn-hover: #e6ddd0;
+  --paper-line: rgba(200, 180, 150, 0.3);
+}
+
+/* Reader View */
+.reader-view {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-color);
+  z-index: 1200;
+  flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-image: 
+    linear-gradient(to bottom, var(--paper-line) 1px, transparent 1px);
+  background-size: 100% 24px; /* Reduced line spacing */
+  line-height: 1.5; /* Reduced from 1.6 */
+}
+
+.reader-view.open {
+  display: flex;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Header - Compact */
+.reader-header {
+  padding: 6px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--header-bg);
+  min-height: 36px;
+}
+
+.reader-title {
+  font-size: 0.95rem;
+  color: var(--title-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  margin: 0;
+}
+
+.reader-author,
+.reader-date {
+  font-size: 0.75rem;
+  color: var(--meta-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Content Area */
+.reader-content-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0; /* Reduced padding */
+  display: flex;
+  justify-content: center;
+  background: 
+    linear-gradient(to bottom, var(--paper-line) 1px, transparent 1px),
+    linear-gradient(to right, var(--bg-color), var(--bg-color));
+  background-size: 100% 24px, 100% 100%;
+}
+
+.reader-content {
+  max-width: 680px;
+  width: 90%;
+  font-size: 0.95rem; /* Slightly smaller */
+  line-height: 1.5;
+  color: var(--text-color);
+  word-break: break-word;
+  padding: 0 32px; /* Reduced padding */
+  position: relative;
+}
+
+.reader-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 24px; /* Moved closer */
+  bottom: 0;
+  width: 1px;
+  background: var(--paper-line);
+}
+
+.reader-content p {
+  margin-bottom: 0.8em; /* Reduced from 1.2em */
+  text-indent: 1em;
+}
+
+/* Buttons - Fixed Theme Toggle */
+.reader-action-btn,
+.reader-mode-toggle {
+  background: var(--btn-bg);
+  border: 1px solid var(--border-color);
+  color: var(--meta-color);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+}
+
+.reader-mode-toggle {
+  min-width: 70px;
+}
+
+.reader-action-btn:hover,
+.reader-mode-toggle:hover {
+  background: var(--btn-hover);
+  color: var(--title-color);
+}
+
+/* Pagination */
+.reader-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar */
+.reader-content-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reader-content-container::-webkit-scrollbar-track {
+  background: var(--header-bg);
+}
+
+.reader-content-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+/* Remove blue highlight on buttons */
+button:focus {
+  outline: none;
+  box-shadow: none;
+}
+/* Editor View Styles */
+        .editor-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #121212;
+            z-index: 1200;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        body.light-mode .editor-view {
+            background: #f5f5f5;
+        }
+
+        .editor-view.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .editor-header {
+            position: sticky;
+            top: 0;
+            padding: 18px 24px;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            z-index: 10;
+        }
+
+        body.light-mode .editor-header {
+            background: var(--light-card);
+        }
+
+        .editor-title-container {
+            flex: 1;
+            max-width: calc(100% - 120px);
+        }
+
+        .editor-title, .editor-author {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--text-light);
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        body.light-mode .editor-title,
+        body.light-mode .editor-author {
+            border-color: var(--light-text-light);
+            background: var(--light-card);
+            color: var(--light-text);
+        }
+
+        .editor-title:focus, .editor-author:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .editor-content-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: #121212;
+        }
+
+        body.light-mode .editor-content-container {
+            background: #f5f5f5;
+        }
+
+        .editor-pages-container {
+            max-width: var(--reader-max-width);
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .editor-page {
+            padding: var(--reader-padding);
+            background: #1e1e1e;
+            border-radius: 0;
+            font-family: 'Lora', Georgia, serif;
+            font-size: var(--reader-font-size);
+            line-height: var(--reader-line-height);
+            color: #e0e0e0;
+            border: none;
+            outline: none;
+            resize: none;
+            transition: var(--transition);
+            min-height: 300px;
+            border-left: 1px solid #333;
+            border-right: 1px solid #333;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        body.light-mode .editor-page {
+            background: #fff;
+            color: #333;
+            border-left: 1px solid #e0e0e0;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .editor-page:last-child {
+            margin-bottom: 0;
+        }
+
+        .editor-page-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .editor-page-number {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .editor-page-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .editor-page-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--primary-light);
+        }
+
+        body.light-mode .editor-page-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .editor-page-btn.delete {
+            color: #ef4444;
+        }
+
+        .editor-page-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .editor-add-page {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .editor-add-page-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-add-page-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 14px;
+            position: sticky;
+            bottom: 0;
+            background: var(--card-bg);
+            padding: 16px 24px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        body.light-mode .editor-actions {
+            background: var(--light-card);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        body.light-mode .theme-toggle {
+            color: var(--light-text);
+        }
+
+        .theme-toggle:hover {
+            color: var(--primary-light);
+        }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        body.light-mode .empty-state {
+            color: var(--light-text-light);
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+
+        body.light-mode .empty-state i {
+            color: var(--light-text-light);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Loading State */
+        .loading-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-light);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+    </style>
+    </head>
+<body>
+  <div class="header">
+        <div class="header-title">Plite-Book </div>
+        <div class="header-actions">
+            <button class="header-btn" id="searchBtn"><i class="fas fa-search"></i></button>
+            <button class="header-btn theme-toggle" id="themeToggle"><i class="fas fa-sun"></i></button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="search-section" id="searchSection" style="display: none;">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search books or authors...">
+            </div>
+        </div>
+
+        <div class="section-title">New Post</div>
+        <div class="books-container" id="myBooksContainer">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading your books...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="home.html" class="nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="#" class="nav-item active"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="#" class="nav-item add-book" id="addBookBtn"><i class="fas fa-plus"></i></a>
+        <a href="library4.html" class="nav-item "><i class="fas fa-bookmark"></i><span>Library</span></a>
+        <a href="#" class="nav-item "><i class="fas fa-user"></i><span>Rank </span></a>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div class="modal-overlay" id="bookModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Add New Book</div>
+                <button class="close-modal" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="form-group">
+                <label for="bookTitle">Book Title</label>
+                <input type="text" id="bookTitle" placeholder="Enter book title">
+            </div>
+            <div class="form-group">
+                <label for="bookAuthor">Author Name</label>
+                <input type="text" id="bookAuthor" placeholder="Enter author name">
+            </div>
+            <div class="form-group">
+                <label>Cover Color</label>
+                <div class="color-options" id="colorOptions">
+<!-- Your Approved 24 Colors (Unchanged) -->
+<div class="color-option selected" data-color="#FF5252" style="background-color: #FF5252;"></div> <!-- Red -->
+<div class="color-option" data-color="#FF4081" style="background-color: #FF4081;"></div> <!-- Pink -->
+<div class="color-option" data-color="#E040FB" style="background-color: #E040FB;"></div> <!-- Purple -->
+<div class="color-option" data-color="#7C4DFF" style="background-color: #7C4DFF;"></div> <!-- Deep Purple -->
+<div class="color-option" data-color="#536DFE" style="background-color: #536DFE;"></div> <!-- Indigo -->
+<div class="color-option" data-color="#448AFF" style="background-color: #448AFF;"></div> <!-- Blue -->
+<div class="color-option" data-color="#40C4FF" style="background-color: #40C4FF;"></div> <!-- Light Blue -->
+<div class="color-option" data-color="#18FFFF" style="background-color: #18FFFF;"></div> <!-- Cyan -->
+<div class="color-option" data-color="#64FFDA" style="background-color: #64FFDA;"></div> <!-- Teal -->
+<div class="color-option" data-color="#69F0AE" style="background-color: #69F0AE;"></div> <!-- Green -->
+<div class="color-option" data-color="#B2FF59" style="background-color: #B2FF59;"></div> <!-- Light Green -->
+<div class="color-option" data-color="#EEFF41" style="background-color: #EEFF41;"></div> <!-- Lime -->
+<div class="color-option" data-color="#FFD740" style="background-color: #FFD740;"></div> <!-- Amber -->
+<div class="color-option" data-color="#FFAB40" style="background-color: #FFAB40;"></div> <!-- Orange -->
+<div class="color-option" data-color="#FF6E40" style="background-color: #FF6E40;"></div> <!-- Deep Orange -->
+<div class="color-option" data-color="#9E9E9E" style="background-color: #9E9E9E;"></div> <!-- Grey -->
+<div class="color-option" data-color="#607D8B" style="background-color: #607D8B;"></div> <!-- Blue Grey -->
+<div class="color-option" data-color="#795548" style="background-color: #795548;"></div> <!-- Brown -->
+<div class="color-option" data-color="#FF8A80" style="background-color: #FF8A80;"></div> <!-- Coral Red -->
+<div class="color-option" data-color="#FF80AB" style="background-color: #FF80AB;"></div> <!-- Soft Pink -->
+<div class="color-option" data-color="#EA80FC" style="background-color: #EA80FC;"></div> <!-- Lilac -->
+<div class="color-option" data-color="#B388FF" style="background-color: #B388FF;"></div> <!-- Lavender -->
+<div class="color-option" data-color="#8C9EFF" style="background-color: #8C9EFF;"></div> <!-- Periwinkle -->
+<div class="color-option" data-color="#82B1FF" style="background-color: #82B1FF;"></div> <!-- Sky Blue -->
+
+
+<!-- 18 Brand New Unique Colors (No Repeats) -->
+<div class="color-option" data-color="#D50000" style="background-color: #D50000;"></div> <!-- Cardinal Red -->
+<div class="color-option" data-color="#C2185B" style="background-color: #C2185B;"></div> <!-- Berry Pink -->
+<div class="color-option" data-color="#7B1FA2" style="background-color: #7B1FA2;"></div> <!-- Royal Purple -->
+<div class="color-option" data-color="#512DA8" style="background-color: #512DA8;"></div> <!-- Deep Violet -->
+<div class="color-option" data-color="#303F9F" style="background-color: #303F9F;"></div> <!-- Navy Indigo -->
+<div class="color-option" data-color="#1976D2" style="background-color: #1976D2;"></div> <!-- Classic Blue -->
+<div class="color-option" data-color="#0288D1" style="background-color: #0288D1;"></div> <!-- Ocean Blue -->
+<div class="color-option" data-color="#0097A7" style="background-color: #0097A7;"></div> <!-- Teal Blue -->
+<div class="color-option" data-color="#00796B" style="background-color: #00796B;"></div> <!-- Pine Green -->
+<div class="color-option" data-color="#388E3C" style="background-color: #388E3C;"></div> <!-- Forest Green -->
+<div class="color-option" data-color="#689F38" style="background-color: #689F38;"></div> <!-- Olive Green -->
+<div class="color-option" data-color="#64748b" style="background-color: #64748b;"></div> <!-- Moss Green -->
+<!-- 100% Fresh Unique Colors -->
+<div class="color-option" data-color="#8D6E63" style="background-color: #8D6E63;"></div> <!-- Coffee Latte -->
+<div class="color-option" data-color="#78909C" style="background-color: #78909C;"></div> <!-- Stormy Gray -->
+<div class="color-option" data-color="#BA68C8" style="background-color: #BA68C8;"></div> <!-- Soft Lilac -->
+<div class="color-option" data-color="#4DB6AC" style="background-color: #4DB6AC;"></div> <!-- Tropical Teal -->
+<div class="color-option" data-color="#AED581" style="background-color: #AED581;"></div> <!-- Pastel Green -->
+<div class="color-option" data-color="#FF8A65" style="background-color: #FF8A65;"></div> <!-- Coral Peach -->
+
+</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="cancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveBtn">Add Book</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reader View -->
+    <div class="reader-view" id="readerView">
+        <div class="reader-header">
+            <div class="reader-title-container">
+                <div class="reader-title" id="readerTitle"></div>
+                <div class="reader-author" id="readerAuthor"></div>
+            </div>
+            <div class="reader-actions">
+                <div class="reader-pagination">
+                    <button class="reader-pagination-btn" id="prevPageBtn"><i class="fas fa-chevron-left"></i></button>
+                    <div class="reader-pagination-info" id="pageInfo">Page 1 of 1</div>
+                    <button class="reader-pagination-btn" id="nextPageBtn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <button class="action-btn theme-toggle" id="readerThemeToggle"><i class="fas fa-sun"></i></button>
+                <button class="action-btn" id="editBookBtn"><i class="fas fa-edit"></i></button>
+                <button class="action-btn" id="closeReader"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="reader-content-container">
+            <div class="reader-content" id="readerContent"></div>
+        </div>
+    </div>
+
+    <!-- Editor View -->
+    <div class="editor-view" id="editorView">
+        <div class="editor-header">
+            <div class="editor-title-container">
+                <input type="text" class="editor-title" id="editorTitle" placeholder="Book Title">
+                <input type="text" class="editor-author" id="editorAuthor" placeholder="Author Name">
+            </div>
+            <div class="editor-actions">
+                <button class="btn btn-primary" id="saveContentBtn"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-outline" id="closeEditor"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="editor-content-container">
+            <div class="editor-pages-container" id="editorPagesContainer">
+                <!-- Pages will be added here dynamically -->
+            </div>
+            <div class="editor-add-page">
+                <button class="editor-add-page-btn" id="addPageBtn"><i class="fas fa-plus"></i> Add Page</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+  // Firebase Configuration
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "https://storage-1-4f28a-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// DOM Elements
+const searchBtn = document.getElementById('searchBtn');
+const searchSection = document.getElementById('searchSection');
+const searchInput = document.getElementById('searchInput');
+const myBooksContainer = document.getElementById('myBooksContainer');
+const addBookBtn = document.getElementById('addBookBtn');
+const bookModal = document.getElementById('bookModal');
+const closeModal = document.getElementById('closeModal');
+const modalTitle = document.getElementById('modalTitle');
+const bookTitleInput = document.getElementById('bookTitle');
+const bookAuthorInput = document.getElementById('bookAuthor');
+const saveBtn = document.getElementById('saveBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const colorOptions = document.querySelectorAll('.color-option');
+const readerView = document.getElementById('readerView');
+const readerTitle = document.getElementById('readerTitle');
+const readerAuthor = document.getElementById('readerAuthor');
+const readerContent = document.getElementById('readerContent');
+const closeReader = document.getElementById('closeReader');
+const editBookBtn = document.getElementById('editBookBtn');
+const editorView = document.getElementById('editorView');
+const editorTitle = document.getElementById('editorTitle');
+const editorAuthor = document.getElementById('editorAuthor');
+const editorPagesContainer = document.getElementById('editorPagesContainer');
+const closeEditor = document.getElementById('closeEditor');
+const saveContentBtn = document.getElementById('saveContentBtn');
+const themeToggle = document.getElementById('themeToggle');
+const readerThemeToggle = document.getElementById('readerThemeToggle');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const pageInfo = document.getElementById('pageInfo');
+const addPageBtn = document.getElementById('addPageBtn');
+
+// State Variables
+let currentBookId = null;
+let selectedColor = '#2563eb';
+let currentEditingBook = null;
+let booksListener = null;
+let currentPages = [];
+let currentPageIndex = 0;
+
+// Initialize the app
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    loadBooks();
+    removeAllGaps(); // Remove all side gaps
+});
+
+// Function to remove all side gaps from pages
+function removeAllGaps() {
+    // Create and inject CSS to remove all gaps
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* Remove all side gaps from editor and reader */
+        .editor-page-container,
+        .editor-page,
+        .reader-content-container,
+        .reader-content {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            width: 98% !important;
+            max-width: 98% !important;
+        }
+        
+        /* Full width textarea for editor */
+        .editor-page {
+            box-sizing: border-box !important;
+            border-left: none !important;
+            border-right: none !important;
+            resize: none !important;
+        }
+        
+        /* Full width reader content */
+        .reader-content {
+            text-align: justify !important;
+            hyphens: auto !important;
+        }
+        
+        .reader-content p {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            width: 100% !important;
+        }
+        
+        /* Remove container gaps */
+        .editor-view .container,
+        .reader-view .container {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            max-width: 98% !important;
+        }
+        
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .editor-page-container,
+            .editor-page,
+            .reader-content-container,
+            .reader-content {
+                margin: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function setupEventListeners() {
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
+    readerThemeToggle.addEventListener('click', toggleTheme);
+
+    // Search functionality
+    searchBtn.addEventListener('click', toggleSearch);
+    searchInput.addEventListener('input', filterBooks);
+
+    // Modal controls
+    addBookBtn.addEventListener('click', openAddBookModal);
+    closeModal.addEventListener('click', closeBookModal);
+    cancelBtn.addEventListener('click', closeBookModal);
+    saveBtn.addEventListener('click', saveBook);
+
+    // Color selection
+    colorOptions.forEach(option => {
+        option.addEventListener('click', () => selectColor(option));
+    });
+
+    // Reader view controls
+    closeReader.addEventListener('click', closeReaderView);
+    editBookBtn.addEventListener('click', openEditorFromReader);
+    prevPageBtn.addEventListener('click', goToPrevPage);
+    nextPageBtn.addEventListener('click', goToNextPage);
+
+    // Editor view controls
+    closeEditor.addEventListener('click', confirmCloseEditor);
+    saveContentBtn.addEventListener('click', saveBookContent);
+    addPageBtn.addEventListener('click', addNewPage);
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode');
+    
+    if (isLight) {
+        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        readerThemeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+    } else {
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        readerThemeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+
+function toggleSearch() {
+    searchSection.style.display = searchSection.style.display === 'none' ? 'block' : 'none';
+    if (searchSection.style.display === 'block') searchInput.focus();
+}
+
+function filterBooks() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const books = document.querySelectorAll('.book-card');
+    
+    if (books.length === 0) return;
+    
+    let hasMatches = false;
+    
+    books.forEach(book => {
+        const title = book.querySelector('.book-title')?.textContent.toLowerCase();
+        const author = book.querySelector('.book-author')?.textContent.toLowerCase();
+        const isMatch = title?.includes(searchTerm) || author?.includes(searchTerm);
+        book.style.display = isMatch ? '' : 'none';
+        if (isMatch) hasMatches = true;
+    });
+
+    const emptyState = document.querySelector('.empty-state');
+    if (!hasMatches && searchTerm) {
+        if (!emptyState) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-state';
+            emptyEl.innerHTML = '<i class="fas fa-search"></i><p>No books match your search</p>';
+            myBooksContainer.appendChild(emptyEl);
+        }
+    } else if (emptyState && searchTerm === '') {
+        emptyState.remove();
+    }
+}
+
+function openAddBookModal() {
+    modalTitle.textContent = 'Add New Book';
+    bookTitleInput.value = '';
+    bookAuthorInput.value = '';
+    saveBtn.textContent = 'Add Book';
+    currentBookId = null;
+    
+    colorOptions.forEach(option => {
+        option.classList.remove('selected');
+        if (option.dataset.color === '#2563eb') option.classList.add('selected');
+    });
+    selectedColor = '#2563eb';
+    
+    bookModal.classList.add('open');
+}
+
+function closeBookModal() {
+    bookModal.classList.remove('open');
+}
+
+function selectColor(option) {
+    colorOptions.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+    selectedColor = option.dataset.color;
+}
+
+function loadBooks() {
+    myBooksContainer.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading your books...</p></div>';
+    
+    if (booksListener) {
+        booksListener();
+        booksListener = null;
+    }
+    
+    let hasBooks = false;
+    
+    booksListener = database.ref('books').on('value', (snapshot) => {
+        const books = snapshot.val();
+        myBooksContainer.innerHTML = '';
+        
+        if (books) {
+            Object.keys(books).forEach(bookId => {
+                const book = books[bookId];
+                createBookElement(bookId, book.title, book.author, book.color, book.pages || []);
+                hasBooks = true;
+            });
+        }
+        
+        if (!hasBooks) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-state';
+            emptyEl.innerHTML = '<i class="fas fa-book-open"></i><p>No books yet. Add your first book!</p>';
+            myBooksContainer.appendChild(emptyEl);
+        }
+    }, (error) => {
+        console.error('Error loading books:', error);
+        myBooksContainer.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading books. Please try again.</p></div>';
+    });
+}
+
+function createBookElement(id, title, author, color, pages) {
+    const emptyState = document.querySelector('.empty-state');
+    if (emptyState) emptyState.remove();
+    
+    const bookElement = document.createElement('div');
+    bookElement.className = 'book-card';
+    bookElement.dataset.id = id;
+    
+    const pageCount = pages?.length || 0;
+    const lightenedColor = lightenColor(color, 20);
+    
+    bookElement.innerHTML = `
+        <div class="book-cover">
+            <div class="book-color-overlay" style="--book-color: ${color}; --book-color-light: ${lightenedColor}"></div>
+            <div class="book-spine"></div>
+            <div class="book-pages"></div>
+            <div class="book-actions">
+                <button class="action-btn edit" data-id="${id}"><i class="fas fa-pencil-alt"></i></button>
+                <button class="action-btn delete" data-id="${id}"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="book-info">
+            <div class="book-title">${title}</div>
+            <div class="book-author">${author || 'Unknown'}</div>
+            <div class="book-meta">
+                <span><i class="fas fa-file-alt"></i> ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}</span>
+                <span>Public</span>
+            </div>
+        </div>
+    `;
+    
+    bookElement.addEventListener('click', (e) => {
+        if (!e.target.closest('.action-btn')) {
+            openReaderView(id, title, author, color, pages || []);
+        }
+    });
+
+    bookElement.querySelector('.edit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editBook(id, title, author, color);
+    });
+
+    bookElement.querySelector('.delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteBook(id);
+    });
+    myBooksContainer.appendChild(bookElement);
+}
+
+function editBook(id, title, author, color) {
+    currentBookId = id;
+    modalTitle.textContent = 'Edit Book';
+    bookTitleInput.value = title;
+    bookAuthorInput.value = author || '';
+    saveBtn.textContent = 'Update';
+    
+    colorOptions.forEach(option => {
+        option.classList.remove('selected');
+        if (option.dataset.color === color) option.classList.add('selected');
+    });
+    selectedColor = color;
+    
+    bookModal.classList.add('open');
+}
+
+function deleteBook(id) {
+    if (!confirm('Are you sure you want to delete this book?')) return;
+    
+    // Show loading state
+    const bookElement = document.querySelector(`.book-card[data-id="${id}"]`);
+    if (bookElement) {
+        bookElement.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Deleting...</p></div>';
+    }
+    
+    database.ref('books/' + id).remove()
+        .then(() => {
+            // The real-time listener will handle the UI update
+        })
+        .catch(error => {
+            console.error('Error deleting book:', error);
+            alert('Error deleting book. Please try again.');
+            loadBooks(); // Refresh the list
+        });
+}
+
+function saveBook() {
+    const title = bookTitleInput.value.trim();
+    const author = bookAuthorInput.value.trim();
+    
+    if (!title) {
+        alert('Please enter a book title');
+        return;
+    }
+
+    const bookData = {
+        title,
+        author: author || 'Unknown',
+        color: selectedColor,
+        isPublic: true,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Show loading state
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.disabled = true;
+
+    if (currentBookId) {
+        database.ref('books/' + currentBookId).update(bookData)
+            .then(() => {
+                database.ref('books/' + currentBookId).once('value').then(snapshot => {
+                    const book = snapshot.val();
+                    openEditorView(currentBookId, book.title, book.author, book.color, book.pages || ['']);
+                    saveBtn.innerHTML = 'Update';
+                    saveBtn.disabled = false;
+                });
+            })
+            .catch(error => {
+                console.error('Error updating book:', error);
+                alert('Error updating book. Please try again.');
+                saveBtn.innerHTML = 'Update';
+                saveBtn.disabled = false;
+            });
+    } else {
+        bookData.createdAt = firebase.database.ServerValue.TIMESTAMP;
+        bookData.pages = [''];
+        const newBookRef = database.ref('books').push();
+        currentBookId = newBookRef.key;
+        newBookRef.set(bookData)
+            .then(() => {
+                openEditorView(newBookRef.key, title, author, selectedColor, ['']);
+                saveBtn.innerHTML = 'Add Book';
+                saveBtn.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error adding book:', error);
+                alert('Error adding book. Please try again.');
+                saveBtn.innerHTML = 'Add Book';
+                saveBtn.disabled = false;
+            });
+    }
+    
+    bookModal.classList.remove('open');
+}
+
+function openReaderView(id, title, author, color, pages) {
+    currentEditingBook = id;
+    currentPages = pages || [];
+    currentPageIndex = 0;
+    
+    readerTitle.textContent = title;
+    readerAuthor.textContent = author ? `by ${author}` : 'by Unknown';
+    updateReaderContent();
+    updatePageInfo();
+    readerView.classList.add('open');
+    
+    // Apply no-gap styles to reader
+    setTimeout(() => {
+        const readerContent = document.getElementById('readerContent');
+        if (readerContent) {
+            readerContent.style.margin = '0';
+            readerContent.style.padding = '0';
+            readerContent.style.width = '100%';
+            readerContent.style.maxWidth = '100%';
+        }
+    }, 100);
+}
+
+function updateReaderContent() {
+    if (currentPages.length === 0) {
+        readerContent.innerHTML = '<p style="margin: 0; padding: 0; width: 100%;">No content yet.</p>';
+        return;
+    }
+    
+    let formattedContent = currentPages[currentPageIndex] || 'No content for this page.';
+    if (formattedContent && !formattedContent.includes('<p>')) {
+        formattedContent = formattedContent.split('\n\n').map(para => 
+            `<p style="margin: 0 0 0.8em 0; padding: 0; width: 100%;">${para}</p>`
+        ).join('');
+    }
+    
+    readerContent.innerHTML = formattedContent;
+}
+
+function updatePageInfo() {
+    const totalPages = Math.max(1, currentPages.length);
+    pageInfo.textContent = `Page ${currentPageIndex + 1} of ${totalPages}`;
+    
+    // Disable/enable navigation buttons
+    prevPageBtn.disabled = currentPageIndex === 0;
+    nextPageBtn.disabled = currentPageIndex >= currentPages.length - 1;
+}
+
+function goToPrevPage() {
+    if (currentPageIndex > 0) {
+        currentPageIndex--;
+        updateReaderContent();
+        updatePageInfo();
+    }
+}
+
+function goToNextPage() {
+    if (currentPageIndex < currentPages.length - 1) {
+        currentPageIndex++;
+        updateReaderContent();
+        updatePageInfo();
+    }
+}
+
+function closeReaderView() {
+    readerView.classList.remove('open');
+    currentPages = [];
+    currentPageIndex = 0;
+}
+
+function openEditorFromReader() {
+    if (!currentEditingBook) return;
+    
+    // Show loading state
+    editBookBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    editBookBtn.disabled = true;
+    
+    database.ref('books/' + currentEditingBook).once('value').then(snapshot => {
+        const book = snapshot.val();
+        if (book) {
+            readerView.classList.remove('open');
+            openEditorView(currentEditingBook, book.title, book.author, book.color, book.pages || ['']);
+        }
+        editBookBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBookBtn.disabled = false;
+    }).catch(error => {
+        console.error('Error loading book:', error);
+        alert('Error loading book. Please try again.');
+        editBookBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBookBtn.disabled = false;
+    });
+}
+
+function openEditorView(id, title, author, color, pages) {
+    currentEditingBook = id;
+    currentPages = [...pages]; // Create a copy of the pages array
+    
+    editorTitle.value = title || '';
+    editorAuthor.value = author || '';
+    renderEditorPages();
+    editorView.classList.add('open');
+    
+    // Focus on first page if exists and apply no-gap styles
+    setTimeout(() => {
+        const firstPageTextarea = document.querySelector('.editor-page');
+        if (firstPageTextarea) {
+            firstPageTextarea.focus();
+            // Apply full width styles
+            firstPageTextarea.style.width = '100%';
+            firstPageTextarea.style.margin = '0';
+            firstPageTextarea.style.padding = '8px 0';
+            firstPageTextarea.style.borderLeft = 'none';
+            firstPageTextarea.style.borderRight = 'none';
+        }
+    }, 100);
+}
+
+function renderEditorPages() {
+    editorPagesContainer.innerHTML = '';
+    
+    if (currentPages.length === 0) {
+        addNewPage(); // Add a default page if empty
+        return;
+    }
+    
+    currentPages.forEach((pageContent, index) => {
+        addEditorPage(index, pageContent);
+    });
+}
+
+function addEditorPage(index, content = '') {
+    const pageElement = document.createElement('div');
+    pageElement.className = 'editor-page-container';
+    pageElement.style.margin = '0';
+    pageElement.style.padding = '0';
+    pageElement.style.width = '100%';
+    
+    const pageNumber = index + 1;
+    pageElement.innerHTML = `
+        <div class="editor-page-controls">
+            <div class="editor-page-number">Page ${pageNumber}</div>
+            <div>
+                <button class="editor-page-btn delete" data-index="${index}"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <textarea class="editor-page" data-index="${index}" placeholder="Write your content for page ${pageNumber}..." 
+                  style="width: 100%; margin: 0; padding: 8px 0; border-left: none; border-right: none; box-sizing: border-box;">${content}</textarea>
+    `;
+    
+    // Add delete button event
+    const deleteBtn = pageElement.querySelector('.editor-page-btn.delete');
+    deleteBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        deletePage(index);
+    });
+    
+    editorPagesContainer.appendChild(pageElement);
+}
+
+function addNewPage() {
+    currentPages.push('');
+    addEditorPage(currentPages.length - 1);
+    
+    // Scroll to the new page
+    setTimeout(() => {
+        const lastPage = document.querySelector('.editor-page:last-child');
+        if (lastPage) {
+            lastPage.focus();
+            lastPage.scrollIntoView({ behavior: 'smooth' });
+            // Apply full width styles
+            lastPage.style.width = '100%';
+            lastPage.style.margin = '0';
+            lastPage.style.padding = '8px 0';
+            lastPage.style.borderLeft = 'none';
+            lastPage.style.borderRight = 'none';
+        }
+    }, 100);
+}
+
+function deletePage(index) {
+    if (currentPages.length <= 1) {
+        alert('A book must have at least one page');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this page?')) return;
+    
+    currentPages.splice(index, 1);
+    renderEditorPages();
+}
+
+function confirmCloseEditor() {
+    if (hasEditorChanges() && !confirm('You have unsaved changes. Close without saving?')) {
+        return;
+    }
+    editorView.classList.remove('open');
+    currentPages = [];
+}
+
+function hasEditorChanges() {
+    const textareas = document.querySelectorAll('.editor-page');
+    for (let i = 0; i < textareas.length; i++) {
+        if (textareas[i].value !== currentPages[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function saveBookContent() {
+    const title = editorTitle.value.trim();
+    const author = editorAuthor.value.trim();
+    
+    if (!title) {
+        alert('Please enter a book title');
+        return;
+    }
+
+    // Update currentPages with editor content
+    const textareas = document.querySelectorAll('.editor-page');
+    currentPages = Array.from(textareas).map(textarea => textarea.value);
+
+    const bookData = {
+        title,
+        author: author || 'Unknown',
+        pages: currentPages,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Show loading state
+    saveContentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveContentBtn.disabled = true;
+
+    database.ref('books/' + currentEditingBook).update(bookData)
+        .then(() => {
+            editorView.classList.remove('open');
+            saveContentBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            saveContentBtn.disabled = false;
+            // The real-time listener will handle the UI update
+        })
+        .catch(error => {
+            console.error('Error saving content:', error);
+            alert('Error saving content. Please try again.');
+            saveContentBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            saveContentBtn.disabled = false;
+        });
+}
+
+function lightenColor(color, percent) {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (
+        0x1000000 +
+        (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+        (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+        (B < 255 ? (B < 1 ? 0 : B) : 255)
+    ).toString(16).slice(1);
+}
+    </script>
+</body>
+</html>

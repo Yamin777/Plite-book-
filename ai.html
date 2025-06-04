@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilu Chat</title>
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #005CE6;
+            --bg-color: #0A0F1A;
+            --sidebar-bg: #131A26;
+            --chat-bg: #0A0F1A;
+            --text-primary: #E6F0FF;
+            --text-secondary: #A3B8CC;
+            --border-color: rgba(255,255,255,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            height: 100%;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .brand {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            background-color: var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .new-chat-btn {
+            margin: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .conversation-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+        }
+
+        .conversation-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .conversation-icon {
+            color: var(--text-secondary);
+        }
+
+        .conversation-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-item:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .conversation-item.active {
+            background-color: rgba(0,102,255,0.15);
+        }
+
+        /* Main Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--sidebar-bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            color: var(--text-primary);
+        }
+
+        .menu-btn:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .chat-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background-color: var(--chat-bg);
+        }
+
+        .message {
+            max-width: 800px;
+            margin: 0 auto 24px;
+            display: flex;
+            gap: 16px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        .message.ai .avatar {
+            background-color: var(--primary);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-user {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .message-text {
+            padding: 12px 16px;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.1);
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.ai .message-text {
+            border-top-left-radius: 4px;
+        }
+
+        .message.user .message-text {
+            background-color: rgba(0,102,255,0.15);
+            border-top-right-radius: 4px;
+        }
+
+        .input-container {
+            padding: 16px 24px;
+            background-color: var(--sidebar-bg);
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .input-box {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            background-color: var(--sidebar-bg);
+            max-width: 800px;
+            margin: 0 auto;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            background-color: transparent;
+            font-size: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            line-height: 1.5;
+            color: var(--text-primary);
+            padding: 8px 12px;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-color: var(--primary);
+            border: none;
+            color: white;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 4px;
+        }
+
+        .send-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .send-btn:disabled {
+            background-color: rgba(255,255,255,0.1);
+            cursor: not-allowed;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingAnimation {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 100;
+                box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .menu-btn {
+                display: flex;
+            }
+
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 90;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s;
+            }
+
+            .overlay.active {
+                opacity: 1;
+                pointer-events: all;
+            }
+        }
+
+        /* Animation for messages */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-logo">P</div>
+            <div class="brand-name">Pilu.Ai</div>
+        </div>
+        
+        <button class="new-chat-btn" id="newChatBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            New Chat
+        </button>
+        
+        <div class="conversation-list" id="conversationList">
+            <div class="conversation-item active" data-id="default">
+                <svg class="conversation-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="conversation-name">Getting Started</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Main Chat -->
+    <div class="chat-container">
+        <div class="chat-header">
+            <button class="menu-btn" id="menuBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="chat-title">Getting Started</div>
+        </div>
+        
+<div class="messages-container" id="messagesContainer">  
+            <div class="message ai">  
+                <div class="avatar">AI</div>  
+                <div class="message-content">  
+                    <div class="message-text">Hello! I'm Pilu, your AI assistant. How can I help you today?</div>  
+                </div>  
+            </div>  
+        </div>  
+        
+        <div class="input-container">
+            <div class="input-box">
+                <textarea class="chat-input" id="messageInput" placeholder="Message Pilu..." rows="1"></textarea>
+                <button class="send-btn" id="sendBtn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('menuBtn');
+    const overlay = document.getElementById('overlay');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const conversationList = document.getElementById('conversationList');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const messagesContainer = document.getElementById('messagesContainer');
+    const chatTitle = document.querySelector('.chat-title');
+
+    // Initial setup
+    let currentChatId = 'default';
+    let chats = {
+        'default': {
+            title: 'Getting Started',
+            messages: [
+                { sender: 'ai', text: "Hello! I'm your informational AI assistant. I can help with factual questions, calculations, and general knowledge. How can I assist you today?" }
+            ]
+        }
+    };
+
+    // Toggle sidebar on mobile
+    menuBtn.addEventListener('click', () => {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    });
+
+    // Close sidebar when clicking overlay
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    });
+
+    // New chat button functionality
+    newChatBtn.addEventListener('click', createNewChat);
+
+    // Create new chat
+    function createNewChat() {
+        const chatId = 'chat-' + Date.now();
+        const chatTitle = 'New Chat ' + (Object.keys(chats).length);
+        
+        // Add to chats object
+        chats[chatId] = {
+            title: chatTitle,
+            messages: [
+                { sender: 'ai', text: "Hello! I'm your informational AI assistant. I can help with factual questions, calculations, and general knowledge. How can I assist you today?" }
+            ]
+        };
+        
+        // Create conversation item
+        const newItem = document.createElement('div');
+        newItem.className = 'conversation-item active';
+        newItem.dataset.id = chatId;
+        newItem.innerHTML = `
+            <svg class="conversation-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="conversation-name">${chatTitle}</div>
+        `;
+        
+        // Set as active
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        newItem.classList.add('active');
+        
+        // Add to list (after the new chat button)
+        conversationList.insertBefore(newItem, conversationList.children[1]);
+        
+        // Switch to this chat
+        switchChat(chatId);
+        
+        // Close sidebar on mobile
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+
+    // Switch between chats
+    function switchChat(chatId) {
+        currentChatId = chatId;
+        const chat = chats[chatId];
+        
+        // Update title
+        chatTitle.textContent = chat.title;
+        
+        // Render messages
+        renderMessages(chat.messages);
+    }
+
+    // Render messages
+    function renderMessages(messages) {
+        messagesContainer.innerHTML = '';
+        messages.forEach(msg => {
+            addMessage(msg.text, msg.sender, false);
+        });
+        scrollToBottom();
+    }
+
+    // Conversation item click handler
+    conversationList.addEventListener('click', function(e) {
+        const item = e.target.closest('.conversation-item');
+        if (item) {
+            const chatId = item.dataset.id;
+            
+            // Update active state
+            document.querySelectorAll('.conversation-item').forEach(i => {
+                i.classList.remove('active');
+            });
+            item.classList.add('active');
+            
+            // Switch to this chat
+            switchChat(chatId);
+            
+            // Close sidebar on mobile
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+    });
+
+    // Auto-resize textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        
+        // Enable/disable send button
+        sendBtn.disabled = this.value.trim() === '';
+    });
+
+    // Send message on Enter (Shift+Enter for new line)
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) {
+                sendMessage();
+            }
+        }
+    });
+
+    // Send button click handler
+    sendBtn.addEventListener('click', sendMessage);
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message === '') return;
+        
+        // Add user message
+        addMessage(message, 'user');
+        
+        // Add to chat history
+        chats[currentChatId].messages.push({ sender: 'user', text: message });
+        
+        // Clear input
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        sendBtn.disabled = true;
+        
+        // Show typing indicator
+        showTypingIndicator();
+        
+        // Simulate AI response after a delay
+        setTimeout(() => {
+            // Remove typing indicator
+            const typingIndicator = document.querySelector('.typing-indicator-container');
+            if (typingIndicator) typingIndicator.remove();
+            
+            // Generate response
+            const response = generateAIResponse(message);
+            addMessage(response, 'ai');
+            
+            // Add to chat history
+            chats[currentChatId].messages.push({ sender: 'ai', text: response });
+        }, 1000 + Math.random() * 2000);
+    }
+
+    // Show typing indicator (without duplicate avatar)
+    function showTypingIndicator() {
+        const typingContainer = document.createElement('div');
+        typingContainer.className = 'message ai typing-indicator-container';
+        typingContainer.innerHTML = `
+            <div class="avatar">🤖</div>
+            <div class="message-content">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(typingContainer);
+        scrollToBottom();
+    }
+
+    function addMessage(text, sender, scroll = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        messageDiv.innerHTML = `
+            <div class="avatar">${sender === 'ai' ? '🤖' : '👤'}</div>
+            <div class="message-content">
+                <div class="message-text">${text}</div>
+            </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        if (scroll) scrollToBottom();
+    }
+
+    // Function for percentage calculation
+    function calculatePercentage(userMessage) {
+        const percentagePattern = /(\d+)\s*=\s*(\d+)%/;
+        const match = userMessage.match(percentagePattern);
+        if (match) {
+            const totalValue = parseFloat(match[1]);
+            const percentage = parseFloat(match[2]);
+            const result = (totalValue * percentage) / 100;
+            return `${percentage}% of ${totalValue} is: ${result}`;
+        } else {
+            return "For percentage calculations, please use 'total = percentage%'. Example: '300 = 6%' will calculate 6% of 300.";
+        }
+    }
+
+    // Enhanced AI Response Generator - Focused on factual information
+    function generateAIResponse(userMessage) {
+        // Predefined Responses with informative focus
+        const responseGroups = {
+// Basic Greetings
+greetings: {
+    patterns: [
+        /hello/i,
+        /hi\b/i,
+        /hey\b/i,
+        /greetings/i,
+        /howdy/i
+    ],
+    responses: [
+        "Hello! I'm Pilu, always here to help. Let me know what you need!",
+        "Hi there! I'm Pilu, your friendly helper. What can I do for you today?",
+        "Hey! Pilu here. Feel free to tell me what you need!",
+        "Hello! I'm Pilu. Ready whenever you are — how can I help?"
+    ]
+},
+
+            // Time-based greetings
+            timeGreetings: {
+                patterns: [
+                    /good\s*morning/i,
+                    /good\s*afternoon/i,
+                    /good\s*evening/i,
+                    /good\s*night/i
+                ],
+                responses: {
+                    morning: [
+                        "Good morning! I'm ready to provide information and assistance.",
+                        "Morning! What facts or data can I help you with today?"
+                    ],
+                    afternoon: [
+                        "Good afternoon! How can I assist you with information?",
+                        "Afternoon! What would you like to learn about?"
+                    ],
+                    evening: [
+                        "Good evening! What information are you seeking?",
+                        "Evening! I'm here to answer your factual questions."
+                    ],
+                    night: [
+                        "Good night! I'll be here if you need information later.",
+                        "Night! Remember I'm available 24/7 for factual queries."
+                    ]
+                }
+            },
+            
+            // Personal Information
+            personalInfo: {
+                patterns: [
+                    /what.*your\s*name/i,
+                    /who\s*are\s*you/i,
+                    /introduce\s*yourself/i
+                ],
+                responses: [
+                    "I'm an informational AI assistant designed to provide factual answers.",
+                    "I'm a digital assistant specialized in factual information and calculations.",
+                    "My purpose is to provide accurate information on various topics."
+                ]
+            },
+            
+            // Status inquiries
+            status: {
+                patterns: [
+                    /how\s*are\s*you/i,
+                    /how's\s*it\s*going/i,
+                    /how\s*do\s*you\s*do/i
+                ],
+                responses: [
+                    "I'm functioning normally and ready to provide information.",
+                    "All systems operational. How can I assist you with facts?",
+                    "I'm a bot designed for information retrieval, currently working as intended."
+                ]
+            },
+            
+            // Creator information
+            creator: {
+                patterns: [
+                    /who\s*created\s*you/i,
+                    /who\s*made\s*you/i,
+                    /who\s*developed\s*you/i,
+                    /who\s*is\s*your\s*creator/i
+                ],
+                responses: [
+                    "I was created by a team of developers to assist with information retrieval.",
+                    "My architecture was designed by software engineers specializing in AI systems.",
+                    "I'm the product of machine learning and natural language processing research."
+                ]
+            },
+            
+            // Location questions
+            location: {
+                patterns: [
+                    /where\s*are\s*you/i,
+                    /where\s*do\s*you\s*live/i,
+                    /where\s*is\s*your\s*home/i,
+                    /where\s*you\s*from/i
+                ],
+                responses: [
+                    "I exist as software running on cloud servers, accessible globally.",
+                    "My operations are distributed across multiple data centers worldwide.",
+                    "As a digital assistant, I don't have a physical location."
+                ]
+            },
+            
+            // Basic Math - Enhanced to handle more variations
+            math: {
+                patterns: [
+                    /(\d+)\s*([-+×÷xX*\/])\s*(\d+)/,
+                    /what.*(\d+)\s*([-+×÷xX*\/])\s*(\d+)/,
+                    /calculate.*(\d+)\s*([-+×÷xX*\/])\s*(\d+)/,
+                    /how\s*much\s*is\s*(\d+)\s*([-+×÷xX*\/])\s*(\d+)/
+                ],
+                responses: [
+                    "The answer to {expression} is: {result}",
+                    "Calculation result: {expression} = {result}",
+                    "Mathematically, {expression} equals {result}"
+                ],
+                process: (match) => {
+                    const num1 = parseFloat(match[1]);
+                    const num2 = parseFloat(match[3]);
+                    let operator = match[2];
+                    
+                    // Normalize operators
+                    if (operator === 'x' || operator === 'X' || operator === '*') operator = '×';
+                    if (operator === '/') operator = '÷';
+                    
+                    let result;
+                    switch(operator) {
+                        case '+': result = num1 + num2; break;
+                        case '-': result = num1 - num2; break;
+                        case '×': result = num1 * num2; break;
+                        case '÷': result = num1 / num2; break;
+                        default: return "I can't perform that operation.";
+                    }
+                    
+                    return {
+                        expression: `${num1} ${operator} ${num2}`,
+                        result: result
+                    };
+                }
+            },
+            
+            // Percentage calculations
+            percentage: {
+                patterns: [
+                    /(\d+)\s*=\s*(\d+)%/,
+                    /what.*(\d+)%\s*of\s*(\d+)/,
+                    /calculate.*(\d+)%\s*of\s*(\d+)/,
+                    /how\s*much\s*is\s*(\d+)%\s*of\s*(\d+)/
+                ],
+                responses: [
+                    "{percentage}% of {total} is: {result}",
+                    "Percentage calculation: {percentage}% of {total} equals {result}",
+                    "The result is: {result} (which is {percentage}% of {total})"
+                ],
+                process: (match) => {
+                    let total, percentage;
+                    if (match[0].includes('=')) {
+                        total = parseFloat(match[1]);
+                        percentage = parseFloat(match[2]);
+                    } else {
+                        percentage = parseFloat(match[1]);
+                        total = parseFloat(match[2]);
+                    }
+                    const result = (total * percentage) / 100;
+                    
+                    return {
+                        total: total,
+                        percentage: percentage,
+                        result: result
+                    };
+                }
+            },
+            
+            // Abilities
+            abilities: {
+                patterns: [
+                    /what\s*can\s*you\s*do/i,
+                    /what.*your\s*abilities/i,
+                    /what.*your\s*skills/i,
+                    /how\s*can\s*you\s*help/i
+                ],
+                responses: [
+                    "I can perform calculations, provide factual information, and answer knowledge-based questions.",
+                    "My capabilities include mathematical operations and factual information retrieval.",
+                    "I specialize in providing accurate information and performing calculations."
+                ]
+            },
+            
+            // Math capabilities
+            mathHelp: {
+                patterns: [
+                    /can\s*you\s*solve\s*math/i,
+                    /can\s*you\s*calculate/i,
+                    /do\s*you\s*do\s*math/i,
+                    /can\s*you\s*help\s*with\s*math/i
+                ],
+                responses: [
+                    "Yes, I can perform various mathematical calculations. Please provide the equation.",
+                    "I'm capable of solving mathematical problems. What do you need calculated?",
+                    "Mathematical operations are within my capabilities. What's the problem?"
+                ]
+            },
+            
+            // Translation capabilities
+            translation: {
+                patterns: [
+                    /can\s*you\s*translate/i,
+                    /do\s*you\s*speak\s*other\s*languages/i,
+                    /can\s*you\s*convert\s*languages/i
+                ],
+                responses: [
+                    "I don't perform translations, but I can provide information about languages.",
+                    "Translation isn't my primary function, but I can share linguistic facts.",
+                    "I specialize in factual information rather than language translation."
+                ]
+            },
+            
+            // Homework
+            homework: {
+                patterns: [
+                    /can\s*you\s*do\s*my\s*homework/i,
+                    /help\s*with\s*homework/i,
+                    /solve\s*my\s*assignment/i,
+                    /do\s*my\s*school\s*work/i
+                ],
+                responses: [
+                    "I can help explain concepts and provide factual information for your homework.",
+                    "While I won't do your homework for you, I can provide the information you need.",
+                    "I can assist with research and factual questions related to your assignment."
+                ]
+            },
+            
+            // Science questions
+            science: {
+                patterns: [
+                    /science\s*fact/i,
+                    /physics\s*question/i,
+                    /chemistry\s*query/i,
+                    /biology\s*information/i
+                ],
+                responses: [
+                    "The speed of light in a vacuum is approximately 299,792 kilometers per second.",
+                    "Water's chemical formula is H₂O, meaning two hydrogen atoms bonded to one oxygen atom.",
+                    "The human body contains approximately 37.2 trillion cells."
+                ]
+            },
+            
+            // Technology questions
+            technology: {
+                patterns: [
+                    /tech\s*fact/i,
+                    /computer\s*science/i,
+                    /programming\s*information/i,
+                    /AI\s*facts/i
+                ],
+                responses: [
+                    "The first computer programmer was Ada Lovelace in the mid-1800s.",
+                    "There are over 700 programming languages in existence today.",
+                    "Artificial Intelligence research began in the 1950s at the Dartmouth Conference."
+                ]
+            },
+            
+            // History facts
+            history: {
+                patterns: [
+                    /history\s*fact/i,
+                    /when\s*was\s*the\s*(.+)\s*invented/i,
+                    /historical\s*information/i
+                ],
+                responses: [
+                    "The printing press was invented by Johannes Gutenberg around 1440.",
+                    "The Declaration of Independence was signed in 1776.",
+                    "World War II lasted from 1939 to 1945."
+                ]
+            },
+            
+            // Geography facts
+            geography: {
+                patterns: [
+                    /geography\s*fact/i,
+                    /capital\s*of\s*([a-zA-Z]+)/i,
+                    /population\s*of\s*([a-zA-Z]+)/i
+                ],
+                responses: [
+                    "The capital of France is Paris.",
+                    "Mount Everest is the highest point on Earth at 8,848 meters above sea level.",
+                    "The Amazon River is approximately 6,400 km long."
+                ]
+            },
+            
+            // Gratitude
+            thanks: {
+                patterns: [
+                    /thank\s*you/i,
+                    /thanks/i,
+                    /appreciate\s*it/i,
+                    /gracias/i,
+                    /merci/i
+                ],
+                responses: [
+                    "You're welcome. Is there anything else you'd like to know?",
+                    "Happy to help. Do you have other questions?",
+                    "Glad to assist. What else can I inform you about?"
+                ]
+            },
+            
+            // Goodbyes
+            goodbyes: {
+                patterns: [
+                    /bye/i,
+                    /goodbye/i,
+                    /see\s*you/i,
+                    /farewell/i
+                ],
+                responses: [
+                    "Goodbye! Return anytime for more information.",
+                    "Farewell! I'm here if you need factual answers later.",
+                    "See you! Remember I can provide information 24/7."
+                ]
+            }
+        };
+
+        // Check for percentage calculation first
+        for (const [groupName, group] of Object.entries(responseGroups)) {
+            if (groupName === 'percentage') {
+                for (const pattern of group.patterns) {
+                    const match = userMessage.match(pattern);
+                    if (match) {
+                        const data = group.process(match);
+                        const responseTemplate = group.responses[Math.floor(Math.random() * group.responses.length)];
+                        return responseTemplate.replace(/{(\w+)}/g, (_, key) => data[key]);
+                    }
+                }
+            }
+        }
+        
+        // Check for math operations
+        for (const [groupName, group] of Object.entries(responseGroups)) {
+            if (groupName === 'math') {
+                for (const pattern of group.patterns) {
+                    const match = userMessage.match(pattern);
+                    if (match) {
+                        const data = group.process(match);
+                        const responseTemplate = group.responses[Math.floor(Math.random() * group.responses.length)];
+                        return responseTemplate.replace(/{(\w+)}/g, (_, key) => data[key]);
+                    }
+                }
+            }
+        }
+
+        // Check all other response groups
+        for (const [groupName, group] of Object.entries(responseGroups)) {
+            // Skip math and percentage as we already checked them
+            if (groupName === 'math' || groupName === 'percentage') continue;
+            
+            // Special handling for time-based greetings
+            if (groupName === 'timeGreetings') {
+                for (const pattern of group.patterns) {
+                    if (pattern.test(userMessage)) {
+                        let timeOfDay;
+                        if (pattern.toString().includes('morning')) timeOfDay = 'morning';
+                        else if (pattern.toString().includes('afternoon')) timeOfDay = 'afternoon';
+                        else if (pattern.toString().includes('evening')) timeOfDay = 'evening';
+                        else if (pattern.toString().includes('night')) timeOfDay = 'night';
+                        
+                        if (timeOfDay && group.responses[timeOfDay]) {
+                            return group.responses[timeOfDay][Math.floor(Math.random() * group.responses[timeOfDay].length)];
+                        }
+                    }
+                }
+                continue;
+            }
+            
+            // Normal pattern matching for other groups
+            for (const pattern of group.patterns) {
+                if (pattern.test(userMessage)) {
+                    if (typeof group.responses === 'function') {
+                        return group.responses();
+                    }
+                    return group.responses[Math.floor(Math.random() * group.responses.length)];
+                }
+            }
+        }
+
+        // Default responses for unknown queries
+        const defaultResponses = [
+            "I specialize in factual information. Could you clarify your question about: " + userMessage + "?",
+            "I'm designed to provide factual answers. Could you rephrase your question about " + userMessage + "?",
+            "For information about " + userMessage + ", I might need more specific details.",
+            "I focus on factual responses. Could you ask your question about " + userMessage + " differently?"
+        ];
+
+        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    }
+
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+</script>
+</body>
+</html>

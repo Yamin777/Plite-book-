@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নীতিমালা - পাঠাগার</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --header-bg: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: var(--dark);
+            font-family: 'Hind Siliguri', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header Styles */
+        .header {
+            background: var(--header-bg);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: translateY(-2px);
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .profile-pic:hover {
+            transform: scale(1.1);
+            border-color: var(--accent);
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            margin-left: 10px;
+            line-height: 1.3;
+        }
+
+        .profile-role {
+            font-size: 12px;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .profile-name::before {
+            content: "!";
+            margin-right: 5px;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: 55px;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 200px;
+            overflow: hidden;
+            display: none;
+            z-index: 100;
+        }
+
+        .profile:hover .profile-dropdown {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            color: var(--dark);
+            text-decoration: none;
+            display: block;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-item:hover {
+            background: var(--light);
+            color: var(--accent);
+            padding-left: 25px;
+        }
+
+        .dropdown-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .home-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-decoration: none;
+        }
+
+        .home-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Policy Section Styles */
+        .policy-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .policy-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            border-bottom: 3px solid var(--accent);
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .policy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .policy-card {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 25px;
+            border-left: 4px solid var(--accent);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .policy-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .policy-card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .highlight-box {
+            background: rgba(231, 76, 60, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid var(--accent);
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        ul li {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .logo-container {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .profile-section {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .policy-section {
+                padding: 25px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="logo-container">
+            <a href="home.html" class="logo">
+                <i class="fas fa-book-open logo-icon"></i>
+                <span class="logo-text">Plite-book</span>
+            </a>
+        </div>
+        
+        <div class="profile-section">
+            <a href="home.html" class="home-btn">
+                <i class="fas fa-home"></i>
+                home
+            </a>
+            
+            <div class="profile">
+                <img src="images/pp.jpg" alt="Profile" class="profile-pic">
+                <div class="profile-info">
+                    <span class="profile-role">Site Editor</span>
+                    <span class="profile-name">Md Yamin</span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <a href="profile.html" class="dropdown-item">
+                        <i class="fas fa-user"></i> প্রোফাইল
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <i class="fas fa-cog"></i> সেটিংস
+                    </a>
+                    <a href="my-books.html" class="dropdown-item">
+                        <i class="fas fa-book"></i> আমার বইসমূহ
+                    </a>
+                    <a href="logout.html" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i> লগআউট
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="policy-container">
+        <div class="policy-section">
+            <h2 class="section-title"> Bassic Information About this site:
+            </h2>
+            
+                            <div class="policy-card">                    <h3>📚 সাধারণ নিয়ম</h3>
+                    <p>
+                      যদি কোন প্রশ্ন    থাকে   live inbox আছে,
+                        #নিয়ম গুলো লেখক ও পাঠকদের জন্য;
+বই পড়ার সময় অন্যদের বই ইডিট না করা।
+বই লিখলে নিজের থেকে লিখতে হবে অন্যদের 
+কন্টেন্ট দেয়া যাবে না। Library section টা পাঠক দের জন্য optimize তাই ওখান থেকেই পড়ার চেষ্টা করা।
+
+ </p>
+                   
+                </div>
+            
+            <div class="policy-grid">
+                <div class="policy-card">
+ <h3>🚩 কন্টেন্ট মডারেশন</h3>
+                    <p> 
+
+উপযুক্ত কন্টেন্ট লাইব্রেরি তে যুক্ত করার জন্য 
+"নিজের লেখা বই" site এ post করে,
+অথবা drive এর মাধ্যমে pdf দিয়ে লাইব্রেরিতে যুক্ত করা যাবে,পাঠকগণ লাইব্রেরি থেকে বই পড়বে এবং লাইক কমেন্ট করে তাদের feedback জানাবে।
+
+Feedback এর উপর ভিত্তি করে লাইব্রেরির Top বই গুলোর ranking দেখানো হবে।
+
+
+</p>
+                </div>
+               
+
+
+
+            </div>
+
+            <div class="highlight-box">
+                <h3 style="color: var(--accent); margin-bottom: 15px;">❗ নিষিদ্ধ আচরণসমূহ</h3>
+             
+                <p>বিরক্তিকর কিছুই করা যাবে না।</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-light: #4caf50;
+            --primary-dark: #1b5e20;
+            --secondary-color: #81c784;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-light: #757575;
+            --border-color: #e0e0e0;
+            --user-message: #e8f5e9;
+            --other-message: #ffffff;
+            --admin-message: #fff8e1;
+            --shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .logo i {
+            margin-right: 10px;
+            color: #a5d6a7;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            width: 200px;
+            overflow: hidden;
+            z-index: 20;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .dropdown-item i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            width: 20px;
+            text-align: center;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message-user {
+            align-self: flex-end;
+        }
+
+        .message-other {
+            align-self: flex-start;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 18px;
+            margin-bottom: 5px;
+            word-break: break-word;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .user-message .message-content {
+            background-color: var(--user-message);
+            color: var(--text-color);
+            border-bottom-right-radius: 4px;
+        }
+
+        .other-message .message-content {
+            background-color: var(--other-message);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+        }
+
+        .admin-message .message-content {
+            background-color: var(--admin-message);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-info {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .message-sender {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .admin-badge {
+            background-color: var(--primary-light);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .message-time {
+            opacity: 0.8;
+        }
+
+        .input-area {
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            position: relative;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            outline: none;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+
+        #message-input:focus {
+            border-color: var(--primary-light);
+        }
+
+        #send-button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        #send-button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        #send-button i {
+            margin-left: 8px;
+        }
+
+        .typing-indicator {
+            position: absolute;
+            top: -22px;
+            left: 20px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            background-color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .admin-panel {
+            width: 300px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #e9ecef;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+        }
+
+        .admin-panel.active {
+            display: flex;
+        }
+
+        .admin-panel-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-panel-header i {
+            color: var(--primary-color);
+        }
+
+        .admin-actions {
+            margin-bottom: 20px;
+        }
+
+        .admin-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .admin-btn.delete-all {
+            background-color: #d32f2f;
+        }
+
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .admin-status {
+            margin-top: auto;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .admin-status-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+            text-align: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-light);
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .message {
+                max-width: 90%;
+            }
+            
+            .app-header {
+                padding: 12px 15px;
+            }
+            
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .admin-panel {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid #e9ecef;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Settings -->
+        <div class="app-header">
+            <div class="logo">
+                <i class="fas fa-leaf"></i>
+                <span>Plite-book </span>
+            </div>
+            <div class="header-controls">
+                <div class="user-info">
+                    <span id="user-name">Guest</span>
+                    <span id="admin-badge" class="admin-badge" style="display: none;">ADMIN</span>
+                </div>
+                <button class="settings-btn" id="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            
+            <!-- Settings Dropdown -->
+            <div class="settings-dropdown" id="settings-dropdown">
+                <div class="dropdown-item" id="admin-login-btn">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin Login</span>
+                </div>
+                <div class="dropdown-item" id="delete-all-messages-btn" style="display: none;">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Delete All Messages</span>
+                </div>
+                <div class="dropdown-item" id="toggle-admin-panel-btn" style="display: none;">
+                    <i class="fas fa-tools"></i>
+                    <span>Admin Panel</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" id="go-home-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Back to Home</span>
+                </div>
+            </div>
+        </div>
+        <!-- Main Container -->
+        <div style="display: flex; flex-grow: 1; background-color: white; border-radius: 0 0 12px 12px; overflow: hidden;">
+            <!-- Chat Wrapper -->
+            <div class="chat-wrapper" style="flex: 1; display: flex; flex-direction: column;">
+                <!-- Chat Messages -->
+                <div class="chat-container" id="chat-container">
+                    <!-- Messages will appear here -->
+                </div>
+
+                <!-- Message Input -->
+                <div class="input-area">
+                    <div class="typing-indicator" id="typing-indicator"></div>
+                    <input type="text" id="message-input" placeholder="Type your message...">
+                    <button id="send-button">Send <i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div class="admin-panel" id="admin-panel">
+                <div class="admin-panel-header">
+                    <i class="fas fa-shield-alt"></i> Admin Panel
+                </div>
+                <div class="admin-actions">
+                    <button id="delete-all-btn" class="admin-btn delete-all">
+                        <i class="fas fa-trash-alt"></i> Delete All Messages
+                    </button>
+                    <button id="clear-stats-btn" class="admin-btn">
+                        <i class="fas fa-chart-line"></i> Reset Statistics
+                    </button>
+                </div>
+                <div class="admin-status">
+                    <div class="admin-status-title">Chat Statistics</div>
+                    <div class="stats-item">
+                        <span>Total Messages:</span>
+                        <span id="total-messages">0</span>
+                    </div>
+                    <div class="stats-item">
+                        <span>Active Users:</span>
+                        <span id="active-users">0</span>
+                    </div>
+                    <div class="stats-item">
+                        <span>Last Activity:</span>
+                        <span id="last-activity">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="admin-modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modal-close">&times;</span>
+            <div class="modal-header">Admin Login</div>
+            <div class="input-group">
+                <label for="admin-username">Username</label>
+                <input type="text" id="admin-username" placeholder="Enter admin username">
+            </div>
+            <div class="input-group">
+                <label for="admin-password">Password</label>
+                <input type="password" id="admin-password" placeholder="Enter admin password">
+            </div>
+            <button class="login-btn" id="login-btn">Login</button>
+            <div class="error-message" id="error-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEXAMPLEEXAMPLEEXAMPLEEXAMPLE",
+            authDomain: "chat-f048e.firebaseapp.com",
+            databaseURL: "https://chat-f048e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chat-f048e",
+            storageBucket: "chat-f048e.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890abcdef"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // Admin credentials
+        const ADMIN_USERNAME = "admin";
+        const ADMIN_PASSWORD = "admin123";
+
+        // Generate random user ID and name for this session
+        const userId = 'user_' + Math.random().toString(36).substr(2, 8);
+        let userName = 'User_' + Math.floor(Math.random() * 1000);
+        let isTyping = false;
+        let typingTimeout;
+        let isAdmin = false;
+        let totalMessagesCount = 0;
+        let activeUsers = new Set();
+
+        // DOM elements
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsDropdown = document.getElementById('settings-dropdown');
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        const deleteAllMessagesBtn = document.getElementById('delete-all-messages-btn');
+        const toggleAdminPanelBtn = document.getElementById('toggle-admin-panel-btn');
+        const goHomeBtn = document.getElementById('go-home-btn');
+        const adminModal = document.getElementById('admin-modal');
+        const modalClose = document.getElementById('modal-close');
+        const loginBtn = document.getElementById('login-btn');
+        const adminUsername = document.getElementById('admin-username');
+        const adminPassword = document.getElementById('admin-password');
+        const errorMessage = document.getElementById('error-message');
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+        const clearStatsBtn = document.getElementById('clear-stats-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const userNameDisplay = document.getElementById('user-name');
+        const adminBadge = document.getElementById('admin-badge');
+        const totalMessagesDisplay = document.getElementById('total-messages');
+        const activeUsersDisplay = document.getElementById('active-users');
+        const lastActivityDisplay = document.getElementById('last-activity');
+
+
+    // References
+    
+        const messagesRef = database.ref('messages');
+        const typingRef = database.ref('typing');
+        const usersRef = database.ref('users');
+        const statsRef = database.ref('statistics');
+
+        // Update user name display
+        userNameDisplay.textContent = userName;
+
+        // Track active users
+        usersRef.child(userId).set({
+            name: userName,
+            lastActive: new Date().toISOString(),
+            isAdmin: false
+        });
+
+        // Remove user when they disconnect
+        usersRef.child(userId).onDisconnect().remove();
+
+        // Toggle Settings Dropdown
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            settingsDropdown.classList.remove('active');
+        });
+
+        // Show Admin Login Modal
+        adminLoginBtn.addEventListener('click', () => {
+            adminModal.classList.add('active');
+            settingsDropdown.classList.remove('active');
+        });
+
+        // Close Modal
+        modalClose.addEventListener('click', () => {
+            adminModal.classList.remove('active');
+            errorMessage.textContent = '';
+        });
+
+        // Go Home Button
+        goHomeBtn.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // Toggle Admin Panel
+        toggleAdminPanelBtn.addEventListener('click', () => {
+            adminPanel.classList.toggle('active');
+            settingsDropdown.classList.remove('active');
+        });
+
+        // Admin Login
+        loginBtn.addEventListener('click', () => {
+            const username = adminUsername.value.trim();
+            const password = adminPassword.value.trim();
+
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                adminModal.classList.remove('active');
+                adminBadge.style.display = 'inline';
+                userName = 'Admin';
+                userNameDisplay.textContent = userName;
+                errorMessage.textContent = '';
+                
+                // Show admin buttons in settings
+                toggleAdminPanelBtn.style.display = 'flex';
+                deleteAllMessagesBtn.style.display = 'flex';
+
+                // Update user status in database
+                usersRef.child(userId).update({
+                    name: userName,
+                    isAdmin: true
+                });
+
+            } else {
+                errorMessage.textContent = 'Invalid username or password';
+                adminPassword.value = '';
+            }
+        });
+
+        // Delete All Messages from Settings Menu
+        deleteAllMessagesBtn.addEventListener('click', () => {
+            if (confirm('⚠️ WARNING: This will PERMANENTLY delete ALL messages from the server!\n\nAre you absolutely sure?')) {
+                // Clear the chat UI immediately
+                chatContainer.innerHTML = '';
+                
+                // Delete all messages from Firebase
+                messagesRef.remove()
+                    .then(() => {
+                        // Reset counters
+                        totalMessagesCount = 0;
+                        totalMessagesDisplay.textContent = '0';
+                        
+                        // Update last activity
+                        const now = new Date().toLocaleString();
+                        lastActivityDisplay.textContent = now;
+                        
+                        // Update statistics in database
+                        statsRef.update({
+                            totalMessages: 0,
+                            lastActivity: now
+                        });
+                        
+                        // Close settings dropdown
+                        settingsDropdown.classList.remove('active');
+                        
+                        // Show success message
+                        alert('✅ All messages have been permanently deleted from the server.');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting messages:', error);
+                        alert('❌ Failed to delete messages. Please try again.');
+                    });
+            }
+        });
+
+        // Delete All Messages from Admin Panel
+        deleteAllBtn.addEventListener('click', () => {
+            if (confirm('⚠️ WARNING: This will PERMANENTLY delete ALL messages from the server!\n\nAre you absolutely sure?')) {
+                // Clear the chat UI immediately
+                chatContainer.innerHTML = '';
+                
+                // Delete all messages from Firebase
+                messagesRef.remove()
+                    .then(() => {
+                        // Reset counters
+                        totalMessagesCount = 0;
+                        totalMessagesDisplay.textContent = '0';
+                        
+                        // Update last activity
+                        const now = new Date().toLocaleString();
+                        lastActivityDisplay.textContent = now;
+                        
+                        // Update statistics in database
+                        statsRef.update({
+                            totalMessages: 0,
+                            lastActivity: now
+                        });
+                        
+                        // Show success message
+                        alert('✅ All messages have been permanently deleted from the server.');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting messages:', error);
+                        alert('❌ Failed to delete messages. Please try again.');
+                    });
+            }
+        });
+
+        // Clear Statistics
+        clearStatsBtn.addEventListener('click', () => {
+            if (confirm('Reset all chat statistics to zero?')) {
+                statsRef.update({
+                    totalMessages: 0,
+                    activeUsers: 0,
+                    lastActivity: 'No activity'
+                });
+                
+                totalMessagesDisplay.textContent = '0';
+                activeUsersDisplay.textContent = '0';
+                lastActivityDisplay.textContent = 'No activity';
+            }
+        });
+
+        // Send Message
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+
+            const message = {
+                userId: userId,
+                userName: userName,
+                text: messageText,
+                timestamp: Date.now(),
+                isAdmin: isAdmin
+            };
+
+            messagesRef.push(message);
+            messageInput.value = '';
+            setTyping(false);
+
+            // Update user activity
+            usersRef.child(userId).update({
+                lastActive: new Date().toISOString()
+            });
+
+            // Update statistics
+            const activityTime = new Date().toLocaleString();
+            statsRef.update({
+                lastActivity: activityTime
+            });
+            lastActivityDisplay.textContent = activityTime;
+        }
+
+        // Set Typing Status
+        function setTyping(status) {
+            if (status !== isTyping) {
+                isTyping = status;
+                typingRef.child(userId).set(isTyping ? userName : null);
+            }
+            
+            clearTimeout(typingTimeout);
+            
+            if (isTyping) {
+                typingTimeout = setTimeout(() => {
+                    setTyping(false);
+                }, 2000);
+            }
+        }
+
+        // Format Time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        // Display Message
+          function displayMessage(snapshot) {
+            const message = snapshot.val();
+            const messageId = snapshot.key;
+            
+            const messageDiv = document.createElement('div');
+            const isCurrentUser = message.userId === userId;
+            
+            messageDiv.className = `message ${isCurrentUser ? 'message-user' : 'message-other'}`;
+            messageDiv.setAttribute('data-id', messageId);
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `message-content ${isCurrentUser ? 'user-message' : 
+                                      message.isAdmin ? 'admin-message' : 'other-message'}`;
+            messageContent.textContent = message.text;
+            
+            const messageInfo = document.createElement('div');
+            messageInfo.className = 'message-info';
+            
+            const senderSpan = document.createElement('span');
+            senderSpan.className = 'message-sender';
+            senderSpan.textContent = isCurrentUser ? 'You' : message.userName;
+            
+            if (message.isAdmin && !isCurrentUser) {
+                const adminBadge = document.createElement('span');
+                adminBadge.className = 'admin-badge';
+                adminBadge.textContent = 'Admin';
+                senderSpan.appendChild(adminBadge);
+            }
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = formatTime(message.timestamp);
+            
+            messageInfo.appendChild(senderSpan);
+            messageInfo.appendChild(timeSpan);
+            
+            // Add delete control for admin
+            if (isAdmin) {
+                const controlsElement = document.createElement('div');
+                controlsElement.className = 'message-controls';
+                controlsElement.innerHTML = '<i class="fas fa-trash"></i>';
+                controlsElement.addEventListener('click', () => {
+                    deleteMessage(messageId);
+                });
+                messageContent.appendChild(controlsElement);
+            }
+            
+            messageDiv.appendChild(messageContent);
+            messageDiv.appendChild(messageInfo);
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Update message count
+            totalMessagesCount++;
+            totalMessagesDisplay.textContent = totalMessagesCount;
+            
+            // Update statistics in database
+            statsRef.update({
+                totalMessages: totalMessagesCount
+            });
+        }
+
+        // Delete a specific message
+        function deleteMessage(id) {
+            if (isAdmin) {
+                if (confirm('Delete this message?')) {
+                    messagesRef.child(id).remove()
+                        .then(() => {
+                            const messageElement = document.querySelector(`.message[data-id="${id}"]`);
+                            if (messageElement) {
+                                messageElement.remove();
+                                totalMessagesCount--;
+                                totalMessagesDisplay.textContent = totalMessagesCount;
+                                
+                                // Update statistics in database
+                                statsRef.update({
+                                    totalMessages: totalMessagesCount
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error deleting message:', error);
+                            alert('Error deleting message: ' + error.message);
+                        });
+                }
+            }
+        }
+
+        // Update Typing Indicator
+        function updateTypingIndicator(typingUsers) {
+            const users = Object.values(typingUsers).filter(name => name !== userName);
+            
+            if (users.length > 0) {
+                typingIndicator.textContent = `${users.join(', ')} ${users.length > 1 ? 'are' : 'is'} typing...`;
+                typingIndicator.style.opacity = '1';
+            } else {
+                typingIndicator.style.opacity = '0';
+                setTimeout(() => {
+                    typingIndicator.textContent = '';
+                }, 300);
+            }
+        }
+
+        // Update active users count
+        function updateActiveUsers(users) {
+            const currentUsers = users || {};
+            activeUsers = new Set(Object.keys(currentUsers));
+            activeUsersDisplay.textContent = activeUsers.size;
+            
+            // Update statistics in database
+            statsRef.update({
+                activeUsers: activeUsers.size
+            });
+        }
+
+        // Load initial statistics
+        function loadStatistics() {
+            statsRef.once('value').then((snapshot) => {
+                const stats = snapshot.val() || {};
+                totalMessagesCount = stats.totalMessages || 0;
+                totalMessagesDisplay.textContent = totalMessagesCount;
+                activeUsersDisplay.textContent = stats.activeUsers || 0;
+                lastActivityDisplay.textContent = stats.lastActivity || 'No activity';
+            });
+        }
+
+        // Event Listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.trim() !== '') {
+                setTyping(true);
+            } else {
+                setTyping(false);
+            }
+        });
+
+        // Firebase Listeners
+        messagesRef.limitToLast(100).on('child_added', (snapshot) => {
+            displayMessage(snapshot);
+        });
+
+        messagesRef.limitToLast(100).on('child_removed', (snapshot) => {
+            const id = snapshot.key;
+            const messageElement = document.querySelector(`.message[data-id="${id}"]`);
+            if (messageElement) {
+                messageElement.remove();
+                totalMessagesCount--;
+                totalMessagesDisplay.textContent = totalMessagesCount;
+            }
+        });
+
+        typingRef.on('value', (snapshot) => {
+            const typingUsers = snapshot.val() || {};
+            updateTypingIndicator(typingUsers);
+        });
+
+        usersRef.on('value', (snapshot) => {
+            updateActiveUsers(snapshot.val());
+        });
+
+        // Initialize
+        loadStatistics();
+    </script>
+</body>
+</html>
