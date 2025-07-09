@@ -1,0 +1,2041 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plite-Book - Digital Library</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-light: #60a5fa;
+            --primary-dark: #4338ca;
+            --accent-color: #10b981;
+            --text-color: #f3f4f6;
+            --text-light: #9ca3af;
+            --text-lighter: #d1d5db;
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --header-bg: rgba(31, 41, 55, 0.95);
+            --section-bg: #1a202c;
+            --admin-bg: #0f172a;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --fast-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Light mode variables */
+            --light-bg: #f9fafb;
+            --light-card: #ffffff;
+            --light-header: #ffffff;
+            --light-text: #111827;
+            --light-text-light: #6b7280;
+            --light-text-lighter: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        body.light-mode {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            --bg-color: var(--light-bg);
+            --card-bg: var(--light-card);
+            --header-bg: var(--light-header);
+            --text-color: var(--light-text);
+            --text-light: var(--light-text-light);
+            --text-lighter: var(--light-text-lighter);
+        }
+
+        /* Header styles */
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--header-bg);
+            padding: 16px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        body.light-mode .header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title i {
+            font-size: 1.3rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--fast-transition);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        body.light-mode .header-btn {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--light-text);
+        }
+
+        .header-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Search bar */
+        .search-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--header-bg);
+            padding: 16px 5%;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            z-index: 101;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .search-bar.active {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        body.light-mode .search-bar input {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--light-text);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-light);
+        }
+
+        .search-close {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--fast-transition);
+        }
+
+        .search-close:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: var(--transition);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        body.light-mode .theme-toggle {
+            color: var(--light-text);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+        }
+
+        /* Hero Banner */
+        .hero {
+            position: relative;
+            height: 60vh;
+            min-height: 400px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+            padding: 0 5% 60px;
+            margin-bottom: 50px;
+            overflow: hidden;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 60%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.3s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .hero-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: var(--radius-md);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--fast-transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero-btn:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Content Rows */
+        .content-row {
+            padding: 0 5%;
+            margin-bottom: 50px;
+        }
+
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .row-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .see-all {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--fast-transition);
+        }
+
+        .see-all:hover {
+            color: var(--primary-color);
+        }
+
+        .row-content {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            scrollbar-width: none;
+        }
+
+        .row-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Book Folders */
+        .book-folders {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 0 5%;
+            margin-bottom: 50px;
+        }
+
+        .book-folder {
+            position: relative;
+            height: 150px;
+            background-size: cover;
+            background-position: center;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--fast-transition);
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .book-folder {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .book-folder:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .book-folder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .book-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            z-index: 2;
+        }
+
+        .book-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .book-count {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        /* Book Cards */
+        .book-card {
+            min-width: 200px;
+            width: 200px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: var(--fast-transition);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        body.light-mode .book-card {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .book-card:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .book-card:hover .card-poster {
+            opacity: 0.3;
+        }
+
+        .book-card:hover .card-view-btn {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .card-poster {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: var(--fast-transition);
+            display: block;
+        }
+
+        .card-info {
+            padding: 15px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-author {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .card-view-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background-color: var(--primary-color);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--fast-transition);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .card-view-btn:hover {
+            background-color: var(--primary-light);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* PDF Viewer Modal */
+        .pdf-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .pdf-modal.active {
+            display: flex;
+        }
+
+        .pdf-modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.light-mode .pdf-modal-content {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .pdf-modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .close-pdf-modal {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .pdf-viewer-container {
+            flex-grow: 1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        body.light-mode .pdf-viewer-container {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .pdf-modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .pdf-download-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--fast-transition);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pdf-download-btn:hover {
+            background: #0ea371;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Admin Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        body.light-mode .modal-content {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            transition: var(--fast-transition);
+            font-size: 1rem;
+        }
+
+        body.light-mode .form-input {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: var(--light-text);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--fast-transition);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Admin Dashboard */
+        .admin-dashboard {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--admin-bg);
+            z-index: 1001;
+            overflow-y: auto;
+            padding: 80px 5% 120px;
+        }
+
+        .admin-dashboard.active {
+            display: block;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--admin-bg);
+            padding: 20px 5%;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .admin-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-title i {
+            font-size: 1.5rem;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .admin-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--fast-transition);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-form {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--radius-md);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .admin-form {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .upload-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--fast-transition);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #0ea371;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .logout-btn {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--fast-transition);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #e60000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 77, 77, 0.4);
+        }
+
+        .books-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .book-item {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            transition: var(--fast-transition);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        body.light-mode .book-item {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .book-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .book-poster {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            margin-bottom: 15px;
+        }
+
+        .book-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .book-author {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .book-category {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-color);
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        .book-collections {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .collection-tag {
+            background: rgba(79, 70, 229, 0.2);
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--fast-transition);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .action-btn.delete {
+            background: #ff4d4d;
+        }
+
+        .action-btn.edit {
+            background: #4d79ff;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+
+        /* Collection Modal */
+        .collection-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1002;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .collection-modal.active {
+            display: flex;
+        }
+
+        .collection-modal-content {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .collection-modal-content {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .collection-modal-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .collection-checkboxes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 20px;
+        }
+
+        .collection-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .collection-checkbox input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .collection-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Admin Footer */
+        .admin-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--admin-bg);
+            padding: 15px 5%;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        body.light-mode .admin-footer {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--header-bg);
+            padding: 12px 0;
+            box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode .bottom-nav {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            transition: var(--fast-transition);
+            padding: 8px 12px;
+            position: relative;
+            border-radius: var(--radius-sm);
+        }
+
+        body.light-mode .nav-item {
+            color: var(--light-text-light);
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+            transition: var(--fast-transition);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-3px);
+        }
+
+        .nav-item.add-btn {
+            position: relative;
+            top: -20px;
+            background: var(--primary-color);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(79, 70, 229, 0.4);
+            transition: var(--transition);
+        }
+
+        .nav-item.add-btn .nav-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+        }
+
+        .nav-item.add-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                height: 50vh;
+                min-height: 300px;
+                padding-bottom: 40px;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-description {
+                font-size: 1rem;
+            }
+            
+            .book-card {
+                min-width: 150px;
+                width: 150px;
+            }
+            
+            .card-poster {
+                height: 150px;
+            }
+            
+            .pdf-modal-content {
+                height: 80vh;
+                padding: 15px;
+            }
+            
+            .admin-header {
+                padding: 15px 5%;
+            }
+            
+            .admin-title {
+                font-size: 1.4rem;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .books-list {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .book-folders {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            .book-folder {
+                height: 120px;
+            }
+            
+            .nav-item {
+                font-size: 0.7rem;
+                padding: 6px 8px;
+            }
+            
+            .nav-icon {
+                font-size: 1.1rem;
+            }
+            
+            .nav-item.add-btn {
+                width: 48px;
+                height: 48px;
+                top: -16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 0 5% 40px;
+            }
+            
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .bottom-nav {
+                padding: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Search Bar (hidden by default) -->
+    <div class="search-bar" id="searchBar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search Your Books...">
+        <button class="search-close" id="searchClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-book-open"></i> Plite-Book
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" id="searchBtn" aria-label="Search">
+                <i class="fas fa-search"></i>
+            </button>
+            <button class="header-btn" id="adminBtn" aria-label="Admin">
+                <i class="fas fa-user-shield"></i>
+            </button>
+            <button class="header-btn theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="hero" id="heroBanner">
+        <div class="hero-content">
+            <h1 class="hero-title">Digital Library at Your Fingertips</h1>
+            <p class="hero-description">Access Library anytime, anywhere. Explore the collection of PDF books across various genres and categories.</p>
+            <button class="hero-btn" id="exploreBtn">
+                <i class="fas fa-book-open"></i> Explore Library
+            </button>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Book Collections -->
+        <section class="content-row">
+            <div class="row-header">
+                <h2 class="row-title">Collections</h2>
+                <span class="see-all">See All</span>
+            </div>
+            <div class="book-folders" id="bookCollections">
+                <!-- Book collections will be added dynamically -->
+            </div>
+        </section>
+
+        <!-- Book Rows -->
+        <section class="content-row">
+            <div class="row-header">
+                <h2 class="row-title">Browse All</h2>
+                <span class="see-all">See All</span>
+            </div>
+            <div class="row-content" id="allBooks"></div>
+        </section>
+
+        <section class="content-row">
+            <div class="row-header">
+                <h2 class="row-title">Popular Books</h2>
+                <span class="see-all">See All</span>
+            </div>
+            <div class="row-content" id="popularBooks"></div>
+        </section>
+
+        <section class="content-row">
+            <div class="row-header">
+                <h2 class="row-title">New Release </h2>
+                <span class="see-all">See All</span>
+            </div>
+            <div class="row-content" id="newArrivals"></div>
+        </section>
+    </main>
+
+    <!-- PDF Viewer Modal -->
+    <div class="pdf-modal" id="pdfModal">
+        <div class="pdf-modal-content">
+            <div class="pdf-modal-header">
+                <h3 class="pdf-modal-title" id="pdfModalTitle">Book Title</h3>
+                <button class="close-pdf-modal" id="closePdfModal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pdf-viewer-container">
+                <iframe class="pdf-viewer" id="pdfViewer" frameborder="0"></iframe>
+            </div>
+            <div class="pdf-modal-footer">
+                <button class="pdf-download-btn" id="downloadPdfBtn">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+                <div class="time-display" id="pageCount">Page 1 of 1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeLoginModal" aria-label="Close">&times;</button>
+            <h2 class="modal-title">Admin Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" class="form-input" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Enter password" required>
+                    <div class="error-message" id="errorMessage">Invalid username or password</div>
+                </div>
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Collection Management Modal -->
+    <div class="collection-modal" id="collectionModal">
+        <div class="collection-modal-content">
+            <h3 class="collection-modal-title">Add to Collection</h3>
+            <div class="collection-checkboxes" id="collectionCheckboxes">
+                <!-- Collection checkboxes will be added dynamically -->
+            </div>
+            <div class="collection-modal-actions">
+                <button class="action-btn" id="cancelCollectionBtn">Cancel</button>
+                <button class="action-btn edit" id="saveCollectionBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard">
+        <div class="admin-header">
+            <h2 class="admin-title">
+                <i class="fas fa-book"></i> Plite-Book Admin
+            </h2>
+            <div class="admin-actions">
+                <button class="admin-btn" id="adminSearchBtn" aria-label="Search">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+        
+        <div class="admin-form">
+            <h3 style="margin-bottom: 20px; color: var(--text-light);">Add New Book</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bookTitle" class="form-label">Book Title</label>
+                    <input type="text" id="bookTitle" class="form-input" placeholder="Enter book title" required>
+                </div>
+                <div class="form-group">
+                    <label for="bookAuthor" class="form-label">Author</label>
+                    <input type="text" id="bookAuthor" class="form-input" placeholder="Enter author name" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bookUrl" class="form-label">PDF URL</label>
+                    <input type="url" id="bookUrl" class="form-input" placeholder="https://upload.io/book.pdf" required>
+                </div>
+                <div class="form-group">
+                    <label for="bookImage" class="form-label">Cover Image URL</label>
+                    <input type="url" id="bookImage" class="form-input" placeholder="https://upload.io/cover.jpg">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bookCategory" class="form-label">Category</label>
+                    <select id="bookCategory" class="form-input">
+                        <option value="all">All Books</option>
+                        <option value="popular">Popular</option>
+                        <option value="new">New Arrivals</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="upload-btn" id="addBookBtn">
+                        <i class="fas fa-plus"></i> Add Book
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <h3 style="margin: 30px 0 15px; color: var(--text-light);">All Books</h3>
+        <div class="books-list" id="booksList"></div>
+        
+        <div class="admin-footer">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalBooks">0</span>
+                    <span class="stat-label">Total Books</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="popularCount">0</span>
+                    <span class="stat-label">Popular</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="newCount">0</span>
+                    <span class="stat-label">New Arrivals</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="collectionsCount">0</span>
+                    <span class="stat-label">Collections</span>
+                </div>
+            </div>
+            <div class="version">v1.0.0</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item">
+            <i class="fas fa-home nav-icon"></i>
+            <span>Home</span>
+        </a>
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-compass nav-icon"></i>
+            <span>Explore</span>
+        </a>
+        <a href="index.html" class="nav-item add-btn">
+            <i class="fas fa-plus nav-icon"></i>
+        </a>
+        <a href="library4.html" class="nav-item active">
+            <i class="fas fa-bookmark nav-icon"></i>
+            <span>Library</span>
+        </a>
+        <a href="rank.html" class="nav-item">
+            <i class="fas fa-user nav-icon"></i>
+            <span>Rank</span>
+        </a>
+    </nav>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9G_SlXm0Lz5u3mGJjJ6Qx9vZ1QwXqZ1Q",
+            authDomain: "storage-k1.firebaseapp.com",
+            databaseURL: "https://library-cac7b-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "storage-k1",
+            storageBucket: "storage-k1.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef1234567890"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // DOM Elements
+        const elements = {
+            mainHeader: document.querySelector('.header'),
+            heroBanner: document.getElementById('heroBanner'),
+            bookCollections: document.getElementById('bookCollections'),
+            allBooks: document.getElementById('allBooks'),
+            popularBooks: document.getElementById('popularBooks'),
+            newArrivals: document.getElementById('newArrivals'),
+            pdfModal: document.getElementById('pdfModal'),
+            pdfModalTitle: document.getElementById('pdfModalTitle'),
+            pdfViewer: document.getElementById('pdfViewer'),
+            closePdfModal: document.getElementById('closePdfModal'),
+            downloadPdfBtn: document.getElementById('downloadPdfBtn'),
+            pageCount: document.getElementById('pageCount'),
+            adminBtn: document.getElementById('adminBtn'),
+            loginModal: document.getElementById('loginModal'),
+            closeLoginModal: document.getElementById('closeLoginModal'),
+            loginForm: document.getElementById('loginForm'),
+            usernameInput: document.getElementById('username'),
+            passwordInput: document.getElementById('password'),
+            errorMessage: document.getElementById('errorMessage'),
+            adminDashboard: document.getElementById('adminDashboard'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            addBookBtn: document.getElementById('addBookBtn'),
+            booksList: document.getElementById('booksList'),
+            adminSearchBtn: document.getElementById('adminSearchBtn'),
+            totalBooksEl: document.getElementById('totalBooks'),
+            popularCountEl: document.getElementById('popularCount'),
+            newCountEl: document.getElementById('newCount'),
+            collectionsCountEl: document.getElementById('collectionsCount'),
+            mainContent: document.querySelector('.main-content'),
+            exploreBtn: document.getElementById('exploreBtn'),
+            collectionModal: document.getElementById('collectionModal'),
+            collectionCheckboxes: document.getElementById('collectionCheckboxes'),
+            cancelCollectionBtn: document.getElementById('cancelCollectionBtn'),
+            saveCollectionBtn: document.getElementById('saveCollectionBtn'),
+            searchBar: document.getElementById('searchBar'),
+            searchBtn: document.getElementById('searchBtn'),
+            searchClose: document.getElementById('searchClose'),
+            themeToggle: document.getElementById('themeToggle')
+        };
+
+        // App State
+        let books = [];
+        let collections = [];
+        let currentViewingBook = null;
+        let currentEditingBookId = null;
+
+        // Initialize the app
+        function initApp() {
+            // Set hero banner background
+            elements.heroBanner.style.backgroundImage = 'url("https://source.unsplash.com/random/1600x900/?library,books")';
+            
+            // Load books and collections from Firebase
+            loadBooks();
+            loadCollections();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Check for saved theme preference
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-mode');
+                elements.themeToggle.querySelector('i').className = 'fas fa-moon';
+            }
+        }
+
+        // Load collections from Firebase
+        function loadCollections() {
+            const collectionsRef = database.ref('collections');
+            
+            collectionsRef.on('value', (snapshot) => {
+                collections = [];
+                const data = snapshot.val();
+                
+                if (data) {
+                    // Convert object to array
+                    collections = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                    
+                    // Update collections count
+                    elements.collectionsCountEl.textContent = collections.length;
+                    
+                    // Render collections
+                    renderBookCollections();
+                }
+            });
+        }
+
+        // Render book collections
+        function renderBookCollections() {
+            elements.bookCollections.innerHTML = '';
+            collections.forEach(collection => {
+                const folder = document.createElement('div');
+                folder.className = 'book-folder';
+                folder.style.backgroundImage = `url('${collection.image || "https://source.unsplash.com/random/300x200/?books"}')`;
+                folder.innerHTML = `
+                    <div class="book-info">
+                        <div class="book-title">${collection.title}</div>
+                        <div class="book-count">${collection.bookCount || 0} books</div>
+                    </div>
+                `;
+                folder.addEventListener('click', () => {
+                    // Show books from this collection
+                    showBooksInCollection(collection.id);
+                });
+                elements.bookCollections.appendChild(folder);
+            });
+        }
+
+        // Show books in a specific collection
+        function showBooksInCollection(collectionId) {
+            const collection = collections.find(c => c.id === collectionId);
+            if (!collection) return;
+            
+            const collectionBooks = books.filter(book => 
+                book.collections && book.collections.includes(collectionId)
+            );
+            
+            // Create a modal or update a section to show these books
+            alert(`Showing ${collectionBooks.length} books from "${collection.title}" collection`);
+            // In a real app, you would render these books in a modal or dedicated section
+        }
+
+        // Load books from Firebase
+        function loadBooks() {
+            const booksRef = database.ref('books');
+            
+            booksRef.on('value', (snapshot) => {
+                books = [];
+                const data = snapshot.val();
+                
+                if (data) {
+                    // Convert object to array
+                    books = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                    
+                    // Update stats and render books
+                    updateStats();
+                    renderBooks();
+                } else {
+                    // No books found
+                    showEmptyState();
+                }
+            });
+        }
+
+        // Show empty state for all sections
+        function showEmptyState() {
+            const emptyHTML = '<div class="empty-state"><i class="fas fa-book empty-icon"></i><p>No books available</p></div>';
+            elements.allBooks.innerHTML = emptyHTML;
+            elements.popularBooks.innerHTML = emptyHTML;
+            elements.newArrivals.innerHTML = emptyHTML;
+            elements.booksList.innerHTML = '<div class="empty-state"><i class="fas fa-book empty-icon"></i><p>No books added yet</p></div>';
+        }
+
+        // Update statistics
+        function updateStats() {
+            elements.totalBooksEl.textContent = books.length;
+            elements.popularCountEl.textContent = books.filter(book => book.category === 'popular').length;
+            elements.newCountEl.textContent = books.filter(book => book.category === 'new').length;
+        }
+
+        // Render books in the UI
+        function renderBooks() {
+            // Clear existing content
+            elements.allBooks.innerHTML = '';
+            elements.popularBooks.innerHTML = '';
+            elements.newArrivals.innerHTML = '';
+            elements.booksList.innerHTML = '';
+            
+            // Filter books by category
+            const allBooks = [...books]; // Show all books in the "Browse All" section
+            const popularBooks = books.filter(book => book.category === 'popular');
+            const newArrivalsBooks = books.filter(book => book.category === 'new');
+            
+            // Render books by category
+            renderCategoryBooks(allBooks, elements.allBooks, 'No books available');
+            renderCategoryBooks(popularBooks, elements.popularBooks, 'No popular books');
+            renderCategoryBooks(newArrivalsBooks, elements.newArrivals, 'No new arrivals');
+            
+            // Render all books in admin dashboard
+            if (books.length > 0) {
+                books.forEach(book => {
+                    elements.booksList.appendChild(createBookListItem(book));
+                });
+            } else {
+                elements.booksList.innerHTML = '<div class="empty-state"><i class="fas fa-book empty-icon"></i><p>No books added yet</p></div>';
+            }
+        }
+
+        // Render books for a specific category
+        function renderCategoryBooks(books, container, emptyMessage) {
+            if (books.length > 0) {
+                books.forEach(book => {
+                    container.appendChild(createBookCard(book));
+                });
+            } else {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-book empty-icon"></i><p>${emptyMessage}</p></div>`;
+            }
+        }
+
+        // Create book card for main UI
+        function createBookCard(book) {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+            card.innerHTML = `
+                <img src="${book.image || 'https://via.placeholder.com/200'}" alt="${book.title}" class="card-poster" loading="lazy">
+                <div class="card-view-btn" aria-label="View ${book.title}">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${book.title}</div>
+                    <div class="card-author">${book.author}</div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => {
+                viewBook(book);
+            });
+            
+            return card;
+        }
+
+        // View book in PDF viewer
+        function viewBook(book) {
+            currentViewingBook = book;
+            elements.pdfModalTitle.textContent = `${book.title} by ${book.author}`;
+            elements.pdfViewer.src = book.url;
+            elements.downloadPdfBtn.onclick = () => {
+                window.open(book.url, '_blank');
+            };
+            elements.pdfModal.classList.add('active');
+            
+            // Simple page counter simulation
+            elements.pageCount.textContent = "Loading...";
+            setTimeout(() => {
+                elements.pageCount.textContent = "Page 1 of 1";
+            }, 1000);
+        }
+
+        // Create book list item for admin dashboard
+        function createBookListItem(book) {
+            const item = document.createElement('div');
+            item.className = 'book-item';
+            
+            // Get collection names for this book
+            const bookCollections = collections.filter(collection => 
+                collection.books && collection.books.includes(book.id)
+            );
+            
+            item.innerHTML = `
+                <img src="${book.image || 'https://via.placeholder.com/300'}" alt="${book.title}" class="book-poster" loading="lazy">
+                <div class="book-title">${book.title}</div>
+                <div class="book-author">${book.author}</div>
+                <div class="book-category">${book.category}</div>
+                <div class="book-collections" id="collections-${book.id}">
+                    ${bookCollections.map(collection => `
+                        <span class="collection-tag">
+                            <i class="fas fa-folder"></i> ${collection.title}
+                        </span>
+                    `).join('')}
+                </div>
+                <div class="book-actions">
+                    <button class="action-btn edit" data-id="${book.id}" aria-label="Edit ${book.title}">
+                        <i class="fas fa-edit"></i> Edit Collections
+                    </button>
+                    <button class="action-btn delete" data-id="${book.id}" aria-label="Delete ${book.title}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            `;
+            
+            // Add delete event
+            item.querySelector('.action-btn.delete').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteBook(book.id);
+            });
+            
+            // Add edit collections event
+            item.querySelector('.action-btn.edit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCollectionModal(book.id);
+            });
+            
+            return item;
+        }
+
+        // Show collection management modal
+        function showCollectionModal(bookId) {
+            currentEditingBookId = bookId;
+            elements.collectionCheckboxes.innerHTML = '';
+            
+            // Create checkboxes for each collection
+            collections.forEach(collection => {
+                const isInCollection = collection.books && collection.books.includes(bookId);
+                
+                const checkbox = document.createElement('div');
+                checkbox.className = 'collection-checkbox';
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="collection-${collection.id}" 
+                           ${isInCollection ? 'checked' : ''}>
+                    <label for="collection-${collection.id}">${collection.title}</label>
+                `;
+                elements.collectionCheckboxes.appendChild(checkbox);
+            });
+            
+            elements.collectionModal.classList.add('active');
+        }
+
+        // Save collection changes
+        async function saveCollectionChanges() {
+            if (!currentEditingBookId) return;
+            
+            const checkboxes = elements.collectionCheckboxes.querySelectorAll('input[type="checkbox"]');
+            const updates = {};
+            
+            // Collect all updates
+            checkboxes.forEach((checkbox, index) => {
+                const collection = collections[index];
+                const collectionRef = database.ref(`collections/${collection.id}/books`);
+                
+                if (checkbox.checked) {
+                    // Add book to collection if not already present
+                    if (!collection.books || !collection.books.includes(currentEditingBookId)) {
+                        const newBooks = collection.books ? [...collection.books, currentEditingBookId] : [currentEditingBookId];
+                        updates[`collections/${collection.id}/books`] = newBooks;
+                        updates[`collections/${collection.id}/bookCount`] = newBooks.length;
+                    }
+                } else {
+                    // Remove book from collection if present
+                    if (collection.books && collection.books.includes(currentEditingBookId)) {
+                        const newBooks = collection.books.filter(id => id !== currentEditingBookId);
+                        updates[`collections/${collection.id}/books`] = newBooks;
+                        updates[`collections/${collection.id}/bookCount`] = newBooks.length;
+                    }
+                }
+            });
+            
+            try {
+                // Apply all updates
+                await database.ref().update(updates);
+                elements.collectionModal.classList.remove('active');
+                
+                // Refresh the view
+                loadCollections();
+                loadBooks();
+            } catch (error) {
+                console.error('Error updating collections:', error);
+                alert('Error updating collections. Please try again.');
+            }
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            
+            const themeIcon = elements.themeToggle.querySelector('i');
+            themeIcon.className = isLight ? 'fas fa-moon' : 'fas fa-sun';
+            
+            // Save preference to localStorage
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // PDF modal controls
+            elements.closePdfModal.addEventListener('click', () => {
+                elements.pdfModal.classList.remove('active');
+                elements.pdfViewer.src = '';
+            });
+            
+            // Admin controls
+            elements.adminBtn.addEventListener('click', showLoginModal);
+            elements.closeLoginModal.addEventListener('click', () => elements.loginModal.classList.remove('active'));
+            elements.loginForm.addEventListener('submit', handleLogin);
+            elements.logoutBtn.addEventListener('click', handleLogout);
+            elements.addBookBtn.addEventListener('click', addNewBook);
+            elements.adminSearchBtn.addEventListener('click', () => {
+                alert('Search functionality coming soon!');
+            });
+            
+            // Collection modal controls
+            elements.cancelCollectionBtn.addEventListener('click', () => {
+                elements.collectionModal.classList.remove('active');
+            });
+            
+            elements.saveCollectionBtn.addEventListener('click', saveCollectionChanges);
+            
+            // Explore button
+            elements.exploreBtn.addEventListener('click', () => {
+                if (books.length > 0) {
+                    viewBook(books[0]);
+                }
+            });
+            
+            // Search controls
+            elements.searchBtn.addEventListener('click', () => {
+                elements.searchBar.classList.add('active');
+                elements.searchBar.querySelector('input').focus();
+            });
+            
+            elements.searchClose.addEventListener('click', () => {
+                elements.searchBar.classList.remove('active');
+            });
+            
+            // Theme toggle
+            elements.themeToggle.addEventListener('click', toggleTheme);
+        }
+
+        // Show login modal
+        function showLoginModal() {
+            elements.loginModal.classList.add('active');
+            elements.errorMessage.style.display = 'none';
+            elements.usernameInput.value = '';
+            elements.passwordInput.value = '';
+            elements.usernameInput.focus();
+        }
+
+        // Handle login
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = elements.usernameInput.value.trim();
+            const password = elements.passwordInput.value.trim();
+            
+            // Simple client-side auth (in a real app, use Firebase Auth)
+            if (username === 'admin' && password === 'admin123') {
+                elements.loginModal.classList.remove('active');
+                elements.adminDashboard.classList.add('active');
+                elements.mainContent.style.display = 'none';
+                elements.heroBanner.style.display = 'none';
+                elements.mainHeader.style.display = 'none';
+            } else {
+                elements.errorMessage.style.display = 'block';
+            }
+        }
+
+        // Handle logout
+        function handleLogout() {
+            elements.adminDashboard.classList.remove('active');
+            elements.mainContent.style.display = 'block';
+            elements.heroBanner.style.display = 'flex';
+            elements.mainHeader.style.display = 'flex';
+        }
+
+        // Add new book
+        async function addNewBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const url = document.getElementById('bookUrl').value.trim();
+            const image = document.getElementById('bookImage').value.trim();
+            const category = document.getElementById('bookCategory').value;
+            
+            if (!title || !author || !url) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Show loading state
+            const originalText = elements.addBookBtn.innerHTML;
+            elements.addBookBtn.innerHTML = '<i class="fas fa-spinner spinner"></i> Adding...';
+            elements.addBookBtn.disabled = true;
+            
+            try {
+                // Create new book object
+                const newBook = {
+                    title,
+                    author,
+                    url,
+                    image: image || 'https://via.placeholder.com/200',
+                    category,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                // Add to Firebase
+                await database.ref('books').push(newBook);
+                
+                // Clear form
+                document.getElementById('bookTitle').value = '';
+                document.getElementById('bookAuthor').value = '';
+                document.getElementById('bookUrl').value = '';
+                document.getElementById('bookImage').value = '';
+            } catch (error) {
+                console.error('Error adding book:', error);
+                alert('Error adding book. Please try again.');
+            } finally {
+                // Restore button state
+                elements.addBookBtn.innerHTML = originalText;
+                elements.addBookBtn.disabled = false;
+            }
+        }
+
+        // Delete book
+        async function deleteBook(bookId) {
+            if (confirm('Are you sure you want to delete this book?')) {
+                try {
+                    // First remove book from any collections
+                    const collectionUpdates = {};
+                    collections.forEach(collection => {
+                        if (collection.books && collection.books.includes(bookId)) {
+                            const newBooks = collection.books.filter(id => id !== bookId);
+                            collectionUpdates[`collections/${collection.id}/books`] = newBooks;
+                            collectionUpdates[`collections/${collection.id}/bookCount`] = newBooks.length;
+                        }
+                    });
+                    
+                    // Then delete the book itself
+                    if (Object.keys(collectionUpdates).length > 0) {
+                        await database.ref().update(collectionUpdates);
+                    }
+                    await database.ref(`books/${bookId}`).remove();
+                } catch (error) {
+                    console.error('Error deleting book:', error);
+                    alert('Error deleting book. Please try again.');
+                }
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
